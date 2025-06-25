@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, forwardRef, Inject } from '@nestjs/common';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,7 +7,7 @@ import { Repository } from 'typeorm';
 import { handleDBErrors } from 'src/utils/errors';
 import { BaseValidator } from 'src/core/validators/base.validator';
 import { PaginationDto } from 'src/core/dtos/pagination.dto';
-import { User } from 'src/users/entities/user.entity';
+import { CoursesGroupsService } from 'src/courses/services/courses-groups.service';
 
 @Injectable()
 export class StudentsService {
@@ -15,10 +15,13 @@ export class StudentsService {
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
     private readonly baseValidator: BaseValidator,
-  ) {}
+
+    @Inject(forwardRef(() => CoursesGroupsService))
+    private readonly courseGroupService: CoursesGroupsService,
+  ) { }
 
   async create(createStudentDto: CreateStudentDto) {
-    const {registrationNumber, ...data} = createStudentDto;
+    const { registrationNumber, ...data } = createStudentDto;
     await this.baseValidator.verifyFieldNotRepeated(Student, 'registrationNumber', registrationNumber);
 
     try {
@@ -27,7 +30,7 @@ export class StudentsService {
         ...data,
       });
       await this.studentRepository.save(student);
-      
+
       return student;
 
     } catch (error) {
@@ -35,26 +38,55 @@ export class StudentsService {
     }
   }
 
-  async findAll(paginationDto: PaginationDto, user: User) {
+  async findAll(paginationDto: PaginationDto) {
     const { limit = 10, offset = 0 } = paginationDto;
 
-    if (user.role === 'administrador') {
+    try {
       return await this.studentRepository.find({
         where: { isDeleted: false },
         take: limit,
         skip: offset,
       });
+
+    } catch (error) {
+      handleDBErrors(error, 'findAll - students');
     }
+  }
 
-    // HACER QUERY BUILDER PARA SACAR LOS STUDENTS DEL MAESTRO QUE ESTÁ HACIENDO LA PETICIÓN
+  async findStudentsNotInCourseGroup(courseGroupId: number, paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0, search } = paginationDto;
 
+    try {
+      const queryBuilder = this.studentRepository
+        .createQueryBuilder('student')
+        .leftJoin('student.coursesGroupsStudents', 'cgs')
+        .where('student.isDeleted = :isDeleted', { isDeleted: false })
+        .andWhere('(cgs.courseGroupId != :courseGroupId OR cgs.courseGroupId IS NULL)', { courseGroupId });
+
+      if (search) {
+        queryBuilder.andWhere(
+          '(LOWER(student.fullName) LIKE LOWER(:search) OR ' +
+          'LOWER(student.registrationNumber) LIKE LOWER(:search) OR ' +
+          'CAST(student.semester AS TEXT) LIKE :search)',
+          { search: `%${search}%` }
+        );
+      }
+
+      return await queryBuilder
+        .take(limit)
+        .skip(offset)
+        .getMany();
+
+    } catch (error) {
+      handleDBErrors(error, 'findAllWhere - students');
+    }
   }
 
   async findOne(id: number) {
     const student = await this.studentRepository.findOne({
       where: { id, isDeleted: false },
     });
-    if (!student) throw new NotFoundException(`Student with id: ${ id } not found`);
+    if (!student) throw new NotFoundException(`Student with id: ${id} not found`);
 
     return student;
   }
@@ -64,7 +96,7 @@ export class StudentsService {
       id,
       ...updateStudentDto,
     });
-    if (!student) throw new NotFoundException(`Student with id: ${ id } not found`);
+    if (!student) throw new NotFoundException(`Student with id: ${id} not found`);
 
     try {
       await this.studentRepository.save(student);

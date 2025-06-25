@@ -17,7 +17,7 @@ export class CoursesGroupsController {
     }
 
     @Get(':courseId')
-    @Auth(ValidRoles.administrador)
+    @Auth(ValidRoles.administrador, ValidRoles.maestro)
     findAll(
         @Param('courseId', ParseIntPipe) courseId: number,
         @Query() paginationDto: PaginationDto
@@ -25,8 +25,16 @@ export class CoursesGroupsController {
         return this.coursesGroupsService.findAllByCourse(courseId, paginationDto);
     }
 
+    @Get('individual/:id')
+    @Auth(ValidRoles.administrador, ValidRoles.maestro)
+    findOne(
+        @Param('id', ParseIntPipe) id: number,
+    ) {
+        return this.coursesGroupsService.findOne(id);
+    }
+
     @Patch(':id')
-    @Auth(ValidRoles.administrador)
+    @Auth(ValidRoles.administrador, ValidRoles.maestro)
     update(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateCourseGroupDto: UpdateCourseGroupDto

@@ -16,7 +16,7 @@ export class GroupsService {
     private readonly groupRepository: Repository<Group>,
 
     private readonly periodService: PeriodsService,
-  ) {}
+  ) { }
 
   async create(createGroupDto: CreateGroupDto) {
     const { periodId, ...data } = createGroupDto;
@@ -62,17 +62,22 @@ export class GroupsService {
         period: true,
       },
     });
-    if (!group) throw new NotFoundException(`Group with id: ${ id } not found`);
+    if (!group) throw new NotFoundException(`Group with id: ${id} not found`);
 
     return group;
   }
 
   async update(id: number, updateGroupDto: UpdateGroupDto) {
-    const group = await this.groupRepository.preload({
-      id,
-      ...updateGroupDto,
-    });
-    if (!group) throw new NotFoundException(`Group with id: ${ id } not found`);
+    const { periodId, name } = updateGroupDto;
+
+    const group = await this.findOne(id);
+
+    if (periodId) {
+      const period = await this.periodService.findOne(id);
+      group.period = period;
+    }
+
+    if (name) group.name = name;
 
     try {
       await this.groupRepository.save(group);
@@ -87,7 +92,7 @@ export class GroupsService {
     await this.findOne(id);
 
     try {
-       await this.groupRepository.update(id, { isDeleted: true });
+      await this.groupRepository.update(id, { isDeleted: true });
 
     } catch (error) {
       handleDBErrors(error, 'remove - groups');

@@ -70,6 +70,7 @@ export class CoursesGroupsService {
           course: true,
           group: { period: true },
           user: true,
+          coursesGroupsGradingschemes: true,
         },
       });
 
@@ -81,7 +82,7 @@ export class CoursesGroupsService {
   async findOne(id: number) {
     const courseGroup = await this.courseGroupRepository.findOne({
       where: { id, isDeleted: false },
-      relations: { course: true, group: true, user: true },
+      relations: { course: true, group: true, user: true, coursesGroupsStudents: { student: true }, coursesGroupsGradingschemes: true },
     });
     if (!courseGroup) throw new NotFoundException(`Course Group with id: ${ id } not found`);
 

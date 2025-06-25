@@ -41,7 +41,16 @@ export class CoursesService {
         take: limit,
         skip: offset,
         relations: {
-          coursesGroups: { group: true, user: true },
+          coursesGroups: { 
+            group: { 
+              period: true 
+            }, 
+            user: true,
+            coursesGroupsGradingschemes: true,
+            coursesGroupsStudents: {
+              coursesGroupsAttendances: true,
+            }
+          },
         },
       });
     }
@@ -49,7 +58,11 @@ export class CoursesService {
     const query = this.courseRepository.createQueryBuilder('course')
       .leftJoinAndSelect('course.coursesGroups', 'courseGroup')
       .leftJoinAndSelect('courseGroup.group', 'group')
+      .leftJoinAndSelect('group.period', 'period')
       .leftJoinAndSelect('courseGroup.user', 'user')
+      .leftJoinAndSelect('courseGroup.coursesGroupsGradingschemes', 'coursesGroupsGradingschemes')
+      .leftJoinAndSelect('courseGroup.coursesGroupsStudents', 'coursesGroupsStudents')
+      .leftJoinAndSelect('coursesGroupsStudents.coursesGroupsAttendances', 'coursesGroupsAttendances')
       .where('course.isDeleted = false')
       .andWhere('courseGroup.userId = :userId', { userId: user.id })
       .skip(offset)
@@ -62,7 +75,7 @@ export class CoursesService {
     const course = await this.courseRepository.findOne({
       where: { id, isDeleted: false },
       relations: {
-        coursesGroups: { group: true, user: true },
+        coursesGroups: { group: true, user: true, coursesGroupsGradingschemes: true },
       },
     });
     if (!course) throw new NotFoundException(`Course with id: ${ id } not found`);

@@ -5,12 +5,10 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 import { Auth } from 'src/users/decorators/auth.decorator';
 import { ValidRoles } from 'src/users/interfaces/valid-roles';
 import { PaginationDto } from 'src/core/dtos/pagination.dto';
-import { GetUser } from 'src/users/decorators/get-user.decorator';
-import { User } from 'src/users/entities/user.entity';
 
 @Controller('students')
 export class StudentsController {
-  constructor(private readonly studentsService: StudentsService) {}
+  constructor(private readonly studentsService: StudentsService) { }
 
   @Post()
   @Auth(ValidRoles.administrador, ValidRoles.maestro)
@@ -20,11 +18,22 @@ export class StudentsController {
 
   @Get()
   @Auth(ValidRoles.administrador, ValidRoles.maestro)
-  findAll(
+  findAllByUser(
     @Query() paginationDto: PaginationDto,
-    @GetUser() user: User
   ) {
-    return this.studentsService.findAll(paginationDto, user);
+    return this.studentsService.findAll(paginationDto);
+  }
+
+  @Get('not-in-course-group/:courseGroupId')
+  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  findStudentsNotInCourseGroup(
+    @Param('courseGroupId', ParseIntPipe) courseGroupId: number,
+    @Query() paginationDto: PaginationDto
+  ) {
+    return this.studentsService.findStudentsNotInCourseGroup(
+      courseGroupId,
+      paginationDto
+    );
   }
 
   @Get(':id')
