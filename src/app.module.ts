@@ -8,6 +8,7 @@ import { PeriodsModule } from './periods/periods.module';
 import { CoursesModule } from './courses/courses.module';
 import { MailsModule } from './mails/mails.module';
 import { StudentsModule } from './students/students.module';
+import { PartialEvaluationsModule } from './partial-evaluations/partial-evaluations.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { StudentsModule } from './students/students.module';
     CoursesModule,
     MailsModule,
     StudentsModule,
+    PartialEvaluationsModule,
   ],
   controllers: [],
   providers: [],
