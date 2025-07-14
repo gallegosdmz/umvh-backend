@@ -9,11 +9,17 @@ export class PartialEvaluation {
     @Column('varchar', { length: 100, nullable: true })
     name: string;
 
+    @Column('int')
+    partial: number;
+
     @Column('float')
     grade: number;
 
     @Column('varchar', { length: 50 })
     type: string;
+
+    @Column('int')
+    slot: number;
 
     @ManyToOne(() => CourseGroupStudent, (courseGroupStudent) => courseGroupStudent.partialEvaluations)
     courseGroupStudent: CourseGroupStudent;

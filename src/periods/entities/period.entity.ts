@@ -16,6 +16,15 @@ export class Period {
     endDate: Date;
 
     @Column({ default: true })
+    firstPartialActive: boolean;
+
+    @Column({ default: false })
+    secondPartialActive: boolean;
+
+    @Column({ default: false })
+    thirdPartialActive: boolean;
+
+    @Column({ default: true })
     isActive: boolean;
 
     @OneToMany(() => Group, (group) => group.period)

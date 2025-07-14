@@ -7,7 +7,6 @@ import { Repository } from 'typeorm';
 import { handleDBErrors } from 'src/utils/errors';
 import { PeriodsService } from 'src/periods/periods.service';
 import { PaginationDto } from 'src/core/dtos/pagination.dto';
-import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class GroupsService {
@@ -36,7 +35,7 @@ export class GroupsService {
     }
   }
 
-  async findAll(paginationDto: PaginationDto, user: User) {
+  async findAll(paginationDto: PaginationDto) {
     const { limit = 10, offset = 0 } = paginationDto;
 
     // TODO: HACER COMPROBACIÓN PARA TRAER SOLO LOS GRUPOS A LOS QUE PERTENEZCA EN CASO DE QUE SEA MAESTRO
@@ -88,7 +87,7 @@ export class GroupsService {
     }
   }
 
-  async remove(id: number, user: User) {
+  async remove(id: number) {
     await this.findOne(id);
 
     try {

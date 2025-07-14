@@ -13,6 +13,9 @@ export class Group {
     @ManyToOne(() => Period, (period) => period.groups)
     period: Period;
 
+    @Column('int')
+    semester: number;
+
     @OneToMany(() => CourseGroup, (courseGroup) => courseGroup.group)
     coursesGroups: CourseGroup[];
 

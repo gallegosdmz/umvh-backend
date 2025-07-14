@@ -1,4 +1,4 @@
-import { IsString, MaxLength, IsDateString } from "class-validator";
+import { IsString, MaxLength, IsDateString, IsOptional, IsBoolean } from "class-validator";
 
 export class CreatePeriodDto {
     @IsString()
@@ -10,4 +10,16 @@ export class CreatePeriodDto {
 
     @IsDateString()
     endDate: string;
+
+    @IsOptional()
+    @IsBoolean()
+    firstPartialActive: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    secondPartialActive: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    thirdPartialActive: boolean;
 }

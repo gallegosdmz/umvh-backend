@@ -9,4 +9,8 @@ export class CreateGroupDto {
     @IsInt()
     @Type(() => Number)
     periodId: number;
+
+    @IsInt()
+    @Type(() => Number)
+    semester: number;
 }

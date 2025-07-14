@@ -9,9 +9,6 @@ export class Student {
     @Column('varchar', { length: 100 })
     fullName: string;
 
-    @Column('int')
-    semester: number;
-
     @Column('varchar', { length: 20 })
     registrationNumber: string;
 

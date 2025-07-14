@@ -22,14 +22,11 @@ export class CoursesGroupsStudentsService {
         private readonly courseValidator: CourseValidator,
     ) {}
 
-    async create(createCourseGroupStudentDto: CreateCourseGroupStudentDto, user: User) {
+    async create(createCourseGroupStudentDto: CreateCourseGroupStudentDto) {
         const { courseGroupId, studentId } = createCourseGroupStudentDto;
 
         const courseGroup = await this.courseGroupService.findOne(courseGroupId);
         const student = await this.studentService.findOne(studentId);
-
-        // Validación para saber si el maestro está asignado a este grupo y asingatura
-        await this.courseValidator.checkUserAssignToCourse(courseGroup, user);
 
         // Validación para saber si este alumno ya está asignado a este grupo y asignatura
         await this.courseValidator.checkDuplicateStudentAssignment(courseGroup, student);
@@ -72,7 +69,7 @@ export class CoursesGroupsStudentsService {
     async findOne(id: number, user: User) {
         const courseGroupStudent = await this.courseGroupStudentRepository.findOne({
             where: { id, isDeleted: false },
-            relations: { courseGroup: { course: true, group: true, user: true }, student: true },
+            relations: { courseGroup: { course: true, group: { period: true }, user: true }, student: true },
         });
         if (!courseGroupStudent) throw new NotFoundException(`Course Group Student with id: ${ id } not found`);
 

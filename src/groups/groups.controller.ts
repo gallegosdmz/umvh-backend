@@ -5,8 +5,6 @@ import { UpdateGroupDto } from './dto/update-group.dto';
 import { Auth } from 'src/users/decorators/auth.decorator';
 import { ValidRoles } from 'src/users/interfaces/valid-roles';
 import { PaginationDto } from 'src/core/dtos/pagination.dto';
-import { GetUser } from 'src/users/decorators/get-user.decorator';
-import { User } from 'src/users/entities/user.entity';
 
 @Controller('groups')
 export class GroupsController {
@@ -21,10 +19,9 @@ export class GroupsController {
   @Get()
   @Auth(ValidRoles.administrador, ValidRoles.maestro)
   findAll(
-    @Query() paginationDto: PaginationDto,
-    @GetUser() user: User
+    @Query() paginationDto: PaginationDto
   ) {
-    return this.groupsService.findAll(paginationDto, user);
+    return this.groupsService.findAll(paginationDto);
   }
 
   @Get(':id')
@@ -41,7 +38,7 @@ export class GroupsController {
 
   @Delete(':id')
   @Auth(ValidRoles.administrador)
-  remove(@Param('id', ParseIntPipe) id: number, @GetUser() user: User) {
-    return this.groupsService.remove(id, user);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.groupsService.remove(id);
   }
 }

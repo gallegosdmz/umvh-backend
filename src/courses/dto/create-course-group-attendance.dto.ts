@@ -1,14 +1,19 @@
 import { Type } from "class-transformer";
-import { IsBoolean, IsDateString, IsInt } from "class-validator";
+import { IsDateString, IsInt } from "class-validator";
 
 export class CreateCourseGroupAttendanceDto {
     @IsInt()
     @Type(() => Number)
     courseGroupStudentId: number;
 
+    @IsInt()
+    @Type(() => Number)
+    partial: number;
+
     @IsDateString()
     date: Date;
 
-    @IsBoolean()
-    attend: boolean;
+    @IsInt()
+    @Type(() => Number)
+    attend: number;
 }

@@ -49,6 +49,7 @@ export class CoursesService {
             coursesGroupsGradingschemes: true,
             coursesGroupsStudents: {
               coursesGroupsAttendances: true,
+              student: true,
             }
           },
         },
@@ -63,6 +64,7 @@ export class CoursesService {
       .leftJoinAndSelect('courseGroup.coursesGroupsGradingschemes', 'coursesGroupsGradingschemes')
       .leftJoinAndSelect('courseGroup.coursesGroupsStudents', 'coursesGroupsStudents')
       .leftJoinAndSelect('coursesGroupsStudents.coursesGroupsAttendances', 'coursesGroupsAttendances')
+      .leftJoinAndSelect('coursesGroupsStudents.student', 'student')
       .where('course.isDeleted = false')
       .andWhere('courseGroup.userId = :userId', { userId: user.id })
       .skip(offset)

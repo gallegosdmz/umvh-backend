@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PartialEvaluation } from './entities/partial-evaluation.entity';
 import { CoursesModule } from 'src/courses/courses.module';
 import { UsersModule } from 'src/users/users.module';
+import { PeriodsModule } from 'src/periods/periods.module';
 
 @Module({
   controllers: [PartialEvaluationsController],
@@ -13,6 +14,7 @@ import { UsersModule } from 'src/users/users.module';
     TypeOrmModule.forFeature([PartialEvaluation]),
     UsersModule,
     CoursesModule,
+    PeriodsModule,
   ],
   exports: [PartialEvaluationsService],
 })

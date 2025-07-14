@@ -9,6 +9,8 @@ import { CoursesModule } from './courses/courses.module';
 import { MailsModule } from './mails/mails.module';
 import { StudentsModule } from './students/students.module';
 import { PartialEvaluationsModule } from './partial-evaluations/partial-evaluations.module';
+import { PartialGradesModule } from './partial-grades/partial-grades.module';
+import { FinalGradesModule } from './final-grades/final-grades.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { PartialEvaluationsModule } from './partial-evaluations/partial-evaluati
     MailsModule,
     StudentsModule,
     PartialEvaluationsModule,
+    PartialGradesModule,
+    FinalGradesModule,
   ],
   controllers: [],
   providers: [],

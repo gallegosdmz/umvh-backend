@@ -14,10 +14,9 @@ export class CoursesGroupsStudentsController {
     @Post()
     @Auth(ValidRoles.administrador, ValidRoles.maestro)
     create(
-        @Body() createCourseGroupStudentDto: CreateCourseGroupStudentDto,
-        @GetUser() user: User
+        @Body() createCourseGroupStudentDto: CreateCourseGroupStudentDto
     ) {
-        return this.coursesGroupsStudentsService.create(createCourseGroupStudentDto, user);
+        return this.coursesGroupsStudentsService.create(createCourseGroupStudentDto);
     }
 
     @Get('findAll/:courseGroupId')

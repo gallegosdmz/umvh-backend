@@ -7,11 +7,19 @@ export class CreatePartialEvaluationDto {
     @MaxLength(100)
     name: string;
 
+    @IsInt()
+    @Type(() => Number)
+    partial: number;
+
     @IsNumber()
     grade: number;
 
     @IsString()
     type: string;
+
+    @IsInt()
+    @Type(() => Number)
+    slot: number;
 
     @IsInt()
     @Type(() => Number)

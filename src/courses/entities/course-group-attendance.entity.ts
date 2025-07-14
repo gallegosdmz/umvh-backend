@@ -9,9 +9,12 @@ export class CourseGroupAttendance {
     @ManyToOne(() => CourseGroupStudent, (courseGroupStudent) => courseGroupStudent.coursesGroupsAttendances)
     courseGroupStudent: CourseGroupStudent;
 
+    @Column('int')
+    partial: number;
+
     @Column('date')
     date: Date;
 
-    @Column('boolean')
-    attend: boolean; // True:  si asitió, False: no asistió
+    @Column('int')
+    attend: number;
 }

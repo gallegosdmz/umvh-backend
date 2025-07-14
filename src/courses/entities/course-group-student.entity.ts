@@ -3,6 +3,8 @@ import { CourseGroup } from "./course-group.entity";
 import { Student } from "src/students/entities/student.entity";
 import { CourseGroupAttendance } from "./course-group-attendance.entity";
 import { PartialEvaluation } from "src/partial-evaluations/entities/partial-evaluation.entity";
+import { PartialGrade } from "src/partial-grades/entities/partial-grade.entity";
+import { FinalGrade } from "src/final-grades/entities/final-grade.entity";
 
 @Entity('course_group_student')
 export class CourseGroupStudent {
@@ -20,6 +22,12 @@ export class CourseGroupStudent {
 
     @OneToMany(() => PartialEvaluation, (partialEvaluation) => partialEvaluation.courseGroupStudent)
     partialEvaluations: PartialEvaluation[];
+
+    @OneToMany(() => PartialGrade, (partialGrade) => partialGrade.courseGroupStudent)
+    partialGrades: PartialGrade[];
+
+    @OneToMany(() => FinalGrade, (finalGrade) => finalGrade.courseGroupStudent)
+    finalGrades: FinalGrade[];
 
     @Column({ default: false })
     isDeleted: boolean;

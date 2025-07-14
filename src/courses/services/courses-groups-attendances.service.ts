@@ -58,6 +58,18 @@ export class CoursesGroupsAttendancesService {
         }
     }
 
+    async findAllByStudent(courseGroupStudentId: number, partial: number) {
+        console.log(partial);
+        try {
+            return await this.courseGroupAttendanceRepository.find({
+                where: { courseGroupStudent: { id: courseGroupStudentId }, partial },
+                relations: { courseGroupStudent: { courseGroup: { group: true, course: true } } }
+            });
+        } catch (error) {
+            handleDBErrors(error, 'findAllByStudent - courseGroupAttendances');
+        }
+    }
+
     async findOne(id: number) {
         const courseGroupAttendance = await this.courseGroupAttendanceRepository.findOne({
             where: { id },

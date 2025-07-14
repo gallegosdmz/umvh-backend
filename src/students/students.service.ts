@@ -7,7 +7,6 @@ import { Repository } from 'typeorm';
 import { handleDBErrors } from 'src/utils/errors';
 import { BaseValidator } from 'src/core/validators/base.validator';
 import { PaginationDto } from 'src/core/dtos/pagination.dto';
-import { CoursesGroupsService } from 'src/courses/services/courses-groups.service';
 
 @Injectable()
 export class StudentsService {
@@ -15,9 +14,6 @@ export class StudentsService {
     @InjectRepository(Student)
     private readonly studentRepository: Repository<Student>,
     private readonly baseValidator: BaseValidator,
-
-    @Inject(forwardRef(() => CoursesGroupsService))
-    private readonly courseGroupService: CoursesGroupsService,
   ) { }
 
   async create(createStudentDto: CreateStudentDto) {

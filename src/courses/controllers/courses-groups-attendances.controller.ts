@@ -29,6 +29,15 @@ export class CoursesGroupsAttendancesController {
         return this.coursesGroupsAttendancesService.findAllByCourseGroupAndDate(courseGroupId, date);
     }
 
+    @Get('student/:courseGroupStudentId')
+    @Auth(ValidRoles.administrador, ValidRoles.maestro)
+    findAllByStudent(
+        @Param('courseGroupStudentId', ParseIntPipe) courseGroupStudentId: number,
+        @Query('partial') partial: number
+    ) {
+        return this.coursesGroupsAttendancesService.findAllByStudent(courseGroupStudentId, partial);
+    }
+
     @Patch(':id')
     @Auth(ValidRoles.administrador, ValidRoles.maestro)
     update(
