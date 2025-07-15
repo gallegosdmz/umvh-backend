@@ -59,7 +59,6 @@ export class CoursesGroupsAttendancesService {
     }
 
     async findAllByStudent(courseGroupStudentId: number, partial: number) {
-        console.log(partial);
         try {
             return await this.courseGroupAttendanceRepository.find({
                 where: { courseGroupStudent: { id: courseGroupStudentId }, partial },
@@ -80,7 +79,6 @@ export class CoursesGroupsAttendancesService {
     }
 
     async update(id: number, updateCourseGroupAttendanceDto: UpdateCourseGroupAttendanceDto, user: User) {
-        console.log(updateCourseGroupAttendanceDto);
         const { courseGroupStudentId, ...details } = updateCourseGroupAttendanceDto;
 
         const courseGroupAttendance = await this.courseGroupAttendanceRepository.preload({
