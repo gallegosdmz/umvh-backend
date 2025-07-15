@@ -7,9 +7,6 @@ export class PartialEvaluationGrade {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column('int')
-    partial: number;
-
     @Column('float')
     grade: number;
 

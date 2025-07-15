@@ -36,10 +36,10 @@ export class PartialGradesService {
     }
   }
 
-  async findAll(courseGroupStudentId: number) {
+  async findAll(courseGroupStudentId: number, partial: number) {
     try {
       return await this.partialGradeRepository.find({
-        where: { courseGroupStudent: { id: courseGroupStudentId, isDeleted: false }}
+        where: { partial, isDeleted: false, courseGroupStudent: { id: courseGroupStudentId } }
       });
     } catch (error) {
       handleDBErrors(error, 'findAll - partialGrades');

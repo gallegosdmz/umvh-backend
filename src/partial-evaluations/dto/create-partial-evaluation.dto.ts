@@ -7,6 +7,10 @@ export class CreatePartialEvaluationDto {
     @MaxLength(100)
     name: string;
 
+    @IsInt()
+    @Type(() => Number)
+    partial: number;
+
     @IsString()
     type: string;
 

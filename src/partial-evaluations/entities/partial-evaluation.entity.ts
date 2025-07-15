@@ -10,6 +10,9 @@ export class PartialEvaluation {
     @Column('varchar', { length: 100, nullable: true })
     name: string;
 
+    @Column('int')
+    partial: number;
+
     @Column('varchar', { length: 50 })
     type: string;
 

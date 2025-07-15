@@ -1,13 +1,12 @@
 import { Type } from "class-transformer";
-import { IsDateString, IsInt } from "class-validator";
+import { IsDateString, IsInt, IsNumber } from "class-validator";
 
 export class CreatePartialGradeDto {
     @IsInt()
     @Type(() => Number)
     partial: number;
 
-    @IsInt()
-    @Type(() => Number) 
+    @IsNumber()
     grade: number;
 
     @IsDateString()

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { CreatePartialEvaluationDto } from '../dto/create-partial-evaluation.dto';
 import { UpdatePartialEvaluationDto } from '../dto/update-partial-evaluation.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,6 +6,7 @@ import { PartialEvaluation } from '../entities/partial-evaluation.entity';
 import { Repository } from 'typeorm';
 import { handleDBErrors } from 'src/utils/errors';
 import { CoursesGroupsService } from 'src/courses/services/courses-groups.service';
+import { PeriodsService } from 'src/periods/periods.service';
 
 @Injectable()
 export class PartialEvaluationsService {
@@ -13,6 +14,7 @@ export class PartialEvaluationsService {
     @InjectRepository(PartialEvaluation)
     private readonly partialEvaluationRepository: Repository<PartialEvaluation>,
 
+    private readonly periodService: PeriodsService,
     private readonly courseGroup: CoursesGroupsService,
   ) { }
 
@@ -20,7 +22,6 @@ export class PartialEvaluationsService {
     const { courseGroupId, ...data } = createPartialEvaluationDto;
 
     const courseGroup = await this.courseGroup.findOne(courseGroupId);
-    //await this.checkStatusPeriod(courseGroupStudent.courseGroup.group.period.id, data.partial); 
 
     try {
       const partialEvaluation = this.partialEvaluationRepository.create({
@@ -70,12 +71,11 @@ export class PartialEvaluationsService {
     const partialEvaluation = await this.partialEvaluationRepository.findOne({
       where: { id, isDeleted: false },
       relations: {
-        courseGroup: { group: true, course: true, coursesGroupsStudents: { coursesGroupsAttendances: true, student: true } }
+        courseGroup: { group: { period: true }, course: true, coursesGroupsStudents: { coursesGroupsAttendances: true, student: true } }
       }
     });
     if (!partialEvaluation) throw new NotFoundException(`Partial evaluation with id: ${id} not found`);
 
-    //await this.checkStatusPeriod(partialEvaluation.courseGroupStudent.courseGroup.group.period.id, data.partial!);
 
     // Actualizar los campos
     Object.assign(partialEvaluation, data);
@@ -102,5 +102,14 @@ export class PartialEvaluationsService {
   }
 
 
+  private async checkStatusPeriod(periodId: number, periodPartial: number) {
+    const period = await this.periodService.findOne(periodId);
+    if (!period) throw new NotFoundException(`Period with id: ${ periodId } not found`);
 
+    if (periodPartial === 1 && period.firstPartialActive ) return true;
+    if (periodPartial === 2 && period.secondPartialActive ) return true;
+    if (periodPartial === 3 && period.thirdPartialActive ) return true;
+
+    throw new UnauthorizedException(`The period: ${ periodPartial } si closed`);
+  }
 }
