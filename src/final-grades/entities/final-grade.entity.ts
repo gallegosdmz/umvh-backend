@@ -1,7 +1,7 @@
 import { CourseGroupStudent } from "src/courses/entities/course-group-student.entity";
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity('final_grade')
+@Entity('final_grades')
 export class FinalGrade {
     @PrimaryGeneratedColumn()
     id: number;

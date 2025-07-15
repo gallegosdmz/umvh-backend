@@ -1,7 +1,7 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { CourseGroup } from "./course-group.entity";
 
-@Entity('course_group_gradingscheme')
+@Entity('course_group_gradingschemes')
 export class CourseGroupGradingscheme {
     @PrimaryGeneratedColumn()
     id: number;

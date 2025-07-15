@@ -7,13 +7,6 @@ export class CreatePartialEvaluationDto {
     @MaxLength(100)
     name: string;
 
-    @IsInt()
-    @Type(() => Number)
-    partial: number;
-
-    @IsNumber()
-    grade: number;
-
     @IsString()
     type: string;
 
@@ -23,5 +16,5 @@ export class CreatePartialEvaluationDto {
 
     @IsInt()
     @Type(() => Number)
-    courseGroupStudentId: number;
+    courseGroupId: number;
 }

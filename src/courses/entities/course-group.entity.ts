@@ -4,8 +4,9 @@ import { Group } from "src/groups/entities/group.entity";
 import { User } from "src/users/entities/user.entity";
 import { CourseGroupStudent } from "./course-group-student.entity";
 import { CourseGroupGradingscheme } from "./course-group-gradingscheme.entity";
+import { PartialEvaluation } from "src/partial-evaluations/entities/partial-evaluation.entity";
 
-@Entity('course_group')
+@Entity('course_groups')
 export class CourseGroup {
     @PrimaryGeneratedColumn()
     id: number;
@@ -24,6 +25,9 @@ export class CourseGroup {
 
     @OneToMany(() => CourseGroupGradingscheme, (courseGroupGradingscheme) => courseGroupGradingscheme.courseGroup)
     coursesGroupsGradingschemes: CourseGroupGradingscheme[];
+
+    @OneToMany(() => PartialEvaluation, (partialEvaluation) => partialEvaluation.courseGroup)
+    partialEvaluations: PartialEvaluation[];
 
     @Column('varchar', { length: 150 })
     schedule: string;

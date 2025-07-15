@@ -2,11 +2,11 @@ import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "ty
 import { CourseGroup } from "./course-group.entity";
 import { Student } from "src/students/entities/student.entity";
 import { CourseGroupAttendance } from "./course-group-attendance.entity";
-import { PartialEvaluation } from "src/partial-evaluations/entities/partial-evaluation.entity";
 import { PartialGrade } from "src/partial-grades/entities/partial-grade.entity";
 import { FinalGrade } from "src/final-grades/entities/final-grade.entity";
+import { PartialEvaluationGrade } from "src/partial-evaluations/entities/partial-evaluation-grade.entity";
 
-@Entity('course_group_student')
+@Entity('course_group_students')
 export class CourseGroupStudent {
     @PrimaryGeneratedColumn()
     id: number;
@@ -20,8 +20,8 @@ export class CourseGroupStudent {
     @OneToMany(() => CourseGroupAttendance, (courseGroupAttendance) => courseGroupAttendance.courseGroupStudent)
     coursesGroupsAttendances: CourseGroupAttendance[];
 
-    @OneToMany(() => PartialEvaluation, (partialEvaluation) => partialEvaluation.courseGroupStudent)
-    partialEvaluations: PartialEvaluation[];
+    @OneToMany(() => PartialEvaluationGrade, (partialEvaluationGrade) => partialEvaluationGrade.courseGroupStudent)
+    partialEvaluationGrades: PartialEvaluationGrade[];
 
     @OneToMany(() => PartialGrade, (partialGrade) => partialGrade.courseGroupStudent)
     partialGrades: PartialGrade[];
