@@ -22,25 +22,36 @@ export class MailsService {
 
   async sendMail(to: string, subject: string, html: string) {
     try {
+      // Verificar que las credenciales estén configuradas
+      const clientId = this.configService.get('GOOGLE_CLIENT_ID');
+      const clientSecret = this.configService.get('GOOGLE_CLIENT_SECRET');
+      const refreshToken = this.configService.get('GOOGLE_REFRESH_TOKEN');
+      const gmailUser = this.configService.get('GMAIL_USER');
+
+      if (!clientId || !clientSecret || !refreshToken || !gmailUser) {
+        throw new Error('Credenciales de Gmail no configuradas correctamente');
+      }
+
       const accessToken = await this.oauth2Client.getAccessToken();
-if (!accessToken || !accessToken.token) {
-  throw new Error('No se pudo obtener accessToken. Revisa tu refresh_token y credenciales');
-}
+      
+      if (!accessToken || !accessToken.token) {
+        throw new Error('No se pudo obtener accessToken. Revisa tu refresh_token y credenciales');
+      }
 
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
           type: 'OAuth2',
-          user: this.configService.get('GMAIL_USER'),
-          clientId: this.configService.get('GOOGLE_CLIENT_ID'),
-          clientSecret: this.configService.get('GOOGLE_CLIENT_SECRET'),
-          refreshToken: this.configService.get('GOOGLE_REFRESH_TOKEN'),
+          user: gmailUser,
+          clientId,
+          clientSecret,
+          refreshToken,
           accessToken: accessToken.token,
         },
       });
 
       const mailOptions = {
-        from: `"Sistema" <${this.configService.get('GMAIL_USER')}>`,
+        from: `"Sistema" <${gmailUser}>`,
         to,
         subject,
         html,
@@ -50,6 +61,12 @@ if (!accessToken || !accessToken.token) {
       return result;
 
     } catch (error) {
+      // Manejo específico para errores de OAuth2
+      if (error.message?.includes('invalid_grant')) {
+        console.error('Error de autenticación OAuth2:', error.message);
+        throw new Error('Error de autenticación con Gmail. Verifica tu refresh token y credenciales.');
+      }
+      
       handleDBErrors(error, 'sendMail - mails');
     }
   }
