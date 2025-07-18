@@ -26,6 +26,8 @@ export class AuthService {
         const {password, ...userData} = createUserDto;
         await this.userValidator.verifyUserEmail(userData.email);
 
+        console.log('USER DATA: ', userData);
+
         try {
             const user = this.userRepository.create({
                 ...userData,
@@ -49,6 +51,7 @@ export class AuthService {
             }
 
         } catch (error) {
+            console.log('SALIO ERROR EN EL SERVICE: ', error);
             handleDBErrors(error, 'create - auth');
         }
     }

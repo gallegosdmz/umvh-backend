@@ -58,6 +58,7 @@ export class MailsService {
       };
 
       const result = await transporter.sendMail(mailOptions);
+      console.log('RESULTADO DE MAIL SERVICE: ', result);
       return result;
 
     } catch (error) {
