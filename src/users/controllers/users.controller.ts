@@ -13,7 +13,6 @@ export class UsersController {
   @Post()
   @Auth(ValidRoles.administrador)
   create(@Body() createUserDto: CreateUserDto) {
-    console.log('ENTRÓ AL CONTROLLER')
     return this.usersService.create(createUserDto);
   }
 

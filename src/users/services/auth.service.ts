@@ -26,8 +26,6 @@ export class AuthService {
         const {password, ...userData} = createUserDto;
         await this.userValidator.verifyUserEmail(userData.email);
 
-        console.log('USER DATA: ', userData);
-
         try {
             const user = this.userRepository.create({
                 ...userData,
@@ -60,11 +58,10 @@ export class AuthService {
         const {password, email} = loginUserDto;
 
         const user = await this.userRepository.findOne({
-            where: { email },
+            where: { email, isDeleted: false },
         });
         if (!user) throw new UnauthorizedException('Credentials are not valid (email)');
         if (!bcrypt.compareSync(password, user.password)) throw new UnauthorizedException('Credentials are not valid (password)');
-        if (user.isDeleted) throw new NotFoundException('User not found');
 
         const {password: _, ...data} = user;
 

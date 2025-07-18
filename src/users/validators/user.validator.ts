@@ -17,6 +17,7 @@ export class UserValidator extends BaseValidator {
         const user = await this.dataSource.manager.findOne(User, {
             where: {
                 email: email,
+                isDeleted: false
             },
         });
 
