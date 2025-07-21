@@ -67,7 +67,7 @@ export class GroupsService {
   }
 
   async update(id: number, updateGroupDto: UpdateGroupDto) {
-    const { periodId, name } = updateGroupDto;
+    const { periodId, name, semester } = updateGroupDto;
 
     const group = await this.findOne(id);
 
@@ -77,6 +77,7 @@ export class GroupsService {
     }
 
     if (name) group.name = name;
+    if (semester) group.semester = semester;
 
     try {
       await this.groupRepository.save(group);
