@@ -10,7 +10,6 @@ import { LoginUserDto } from "../dto/login-user.dto";
 import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { ChangePasswordDto } from "../dto/change-password.dto";
 import { UserValidator } from "../validators/user.validator";
-import { MailsService } from "src/mails/mails.service";
 
 @Injectable()
 export class AuthService {
@@ -19,7 +18,6 @@ export class AuthService {
         private readonly userRepository: Repository<User>,
         private readonly jwtService: JwtService,
         private readonly userValidator: UserValidator,
-        private readonly mailService: MailsService,
     ) {}
 
     async create(createUserDto: CreateUserDto) {
@@ -32,13 +30,6 @@ export class AuthService {
                 password: bcrypt.hashSync(password, 10),
             });
             await this.userRepository.save(user);
-
-            // TENGO QUE ARREGLAR ESTO - A VECES FUNCIONA EL accessToken y a veces no
-            await this.mailService.sendMail(
-                userData.email,
-                'Credenciales de Acceso',
-                `<h1>Bienvenido al Sistema</h1><p>Se anexan tus credenciales para acceder al sistema: Correo: ${user.email} Contraseña: ${password}</p>`
-            );
 
             const {password: _, ...data} = user;
 

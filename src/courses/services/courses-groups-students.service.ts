@@ -9,6 +9,7 @@ import { handleDBErrors } from "src/utils/errors";
 import { CourseValidator } from "../validators/course.validator";
 import { PaginationDto } from "src/core/dtos/pagination.dto";
 import { User } from "src/users/entities/user.entity";
+import { GroupsService } from "src/groups/groups.service";
 
 @Injectable()
 export class CoursesGroupsStudentsService {
@@ -18,6 +19,7 @@ export class CoursesGroupsStudentsService {
 
         private readonly courseGroupService: CoursesGroupsService,
         private readonly studentService: StudentsService,
+        private readonly groupService: GroupsService,
 
         private readonly courseValidator: CourseValidator,
     ) {}
@@ -63,6 +65,20 @@ export class CoursesGroupsStudentsService {
 
         } catch (error) {
             handleDBErrors(error, 'findAllByCourseGroup - courses-groups-students');
+        }
+    }
+
+    async findAllByGroup(groupId: number) {
+        const group = await this.groupService.findOne(groupId);
+
+        try {
+            return await this.courseGroupStudentRepository.find({
+                where: { courseGroup: { group } },
+                relations: { student: true },
+            });
+            
+        } catch (error) {
+            handleDBErrors(error, 'findAllByGroup - courses-groups-students');
         }
     }
 

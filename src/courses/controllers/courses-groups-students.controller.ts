@@ -29,6 +29,14 @@ export class CoursesGroupsStudentsController {
         return this.coursesGroupsStudentsService.findAllByCourseGroup(courseGroupId, paginationDto, user);
     }
 
+    @Get('byGroup/:groupId')
+    @Auth(ValidRoles.administrador, ValidRoles.maestro)
+    findAllByGroup(
+        @Param('groupId', ParseIntPipe) groupId: number,
+    ) {
+        return this.coursesGroupsStudentsService.findAllByGroup(groupId);
+    }
+
     @Get(':id')
     @Auth(ValidRoles.administrador, ValidRoles.maestro)
     findOne(
