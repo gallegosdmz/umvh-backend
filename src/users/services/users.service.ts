@@ -24,7 +24,7 @@ export class UsersService {
   async findAll(paginationDto: PaginationDto) {
     const { limit = 10, offset = 0 } = paginationDto;
 
-    const users = await this.userRepository.find({
+    const [users, total] = await this.userRepository.findAndCount({
       where: { isDeleted: false },
       take: limit,
       skip: offset,
@@ -46,7 +46,10 @@ export class UsersService {
       coursesGroups: user.coursesGroups?.filter(cg => !cg.isDeleted && !cg.course.isDeleted && !cg.group.isDeleted && !cg.group.period.isDeleted)
     }));
 
-    return filteredUsers.map(({ password, ...user }) => user);
+    return {
+      users: filteredUsers.map(({ password, ...user }) => user),
+      total
+    };
   }
 
   async findOne(id: number) {
