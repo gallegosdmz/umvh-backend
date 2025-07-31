@@ -38,8 +38,6 @@ export class CoursesService {
     if (user.role === 'administrador') {
       return await this.courseRepository.find({
         where: { isDeleted: false },
-        take: limit,
-        skip: offset,
         relations: {
           coursesGroups: { 
             group: { 
