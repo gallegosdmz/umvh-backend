@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsString, MaxLength } from "class-validator";
+import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class CreateCourseGroupDto {
   @IsNotEmpty()
@@ -14,6 +14,7 @@ export class CreateCourseGroupDto {
   userId: number;
 
   @IsString()
+  @IsOptional()
   @MaxLength(100)
   schedule: string;
 }

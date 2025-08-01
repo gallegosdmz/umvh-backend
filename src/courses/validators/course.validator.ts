@@ -9,12 +9,11 @@ import { CourseGroupStudent } from "../entities/course-group-student.entity";
 
 @Injectable()
 export class CourseValidator extends BaseValidator {
-    async checkDuplicateUserAssignment(course: Course, group: Group, user: Omit<User, 'password'>, schedule: string) {
+    async checkDuplicateUserAssignment(course: Course, group: Group, user: Omit<User, 'password'>) {
         // Validación de parámetros requeridos
         if (!course) throw new BadRequestException('El curso es requerido');
         if (!group) throw new BadRequestException('El grupo es requerido');
         if (!user) throw new BadRequestException('El usuario es requerido');
-        if (!schedule) throw new BadRequestException('El horario es requerido');
 
         // Verificar si ya existe una asignación
         const existingAssignment = await this.dataSource.manager.findOne(CourseGroup, {
@@ -22,7 +21,6 @@ export class CourseValidator extends BaseValidator {
                 course, 
                 group, 
                 user, 
-                schedule, 
                 isDeleted: false 
             },
         });

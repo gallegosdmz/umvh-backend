@@ -28,6 +28,8 @@ export class CoursesGroupsService {
   async create(createCourseGroupDto: CreateCourseGroupDto) {
     const { courseId, groupId, userId, schedule } = createCourseGroupDto;
 
+    const newSchedule = 'Por Defecto'
+
     const course = await this.courseService.findOne(courseId);
     const group = await this.groupService.findOne(groupId);
     const user = await this.userService.findOne(userId);
@@ -37,7 +39,6 @@ export class CoursesGroupsService {
       course,
       group,
       user,
-      schedule,
     );
 
     try {
@@ -45,7 +46,7 @@ export class CoursesGroupsService {
         course,
         group,
         user,
-        schedule
+        schedule: newSchedule
       });
       await this.courseGroupRepository.save(courseGroup);
 
