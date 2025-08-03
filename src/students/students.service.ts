@@ -78,6 +78,7 @@ export class StudentsService {
 
       // Obtener los estudiantes paginados
       const students = await queryBuilder
+        .orderBy('student.id', 'ASC')
         .take(limit)
         .skip(offset)
         .getMany();
