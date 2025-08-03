@@ -38,11 +38,16 @@ export class StudentsService {
     const { limit = 10, offset = 0 } = paginationDto;
 
     try {
-      return await this.studentRepository.find({
+      const [students, total] = await this.studentRepository.findAndCount({
         where: { isDeleted: false },
         take: limit,
         skip: offset,
       });
+
+      return {
+        students,
+        total
+      }
 
     } catch (error) {
       handleDBErrors(error, 'findAll - students');
@@ -68,10 +73,21 @@ export class StudentsService {
         );
       }
 
-      return await queryBuilder
+      // Obtener el total de estudiantes que cumplen con los criterios (sin paginación)
+      const total = await queryBuilder.getCount();
+
+      // Obtener los estudiantes paginados
+      const students = await queryBuilder
         .take(limit)
         .skip(offset)
         .getMany();
+
+      return {
+        students,
+        total,
+        limit,
+        offset
+      };
 
     } catch (error) {
       handleDBErrors(error, 'findAllWhere - students');
