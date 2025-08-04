@@ -16,7 +16,7 @@ export class CoursesGroupsGradingschemesController {
     }
 
     @Get(':id')
-    @Auth(ValidRoles.administrador, ValidRoles.maestro)
+    @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
     findOne(
         @Param('id', ParseIntPipe) id: number,
     ) {

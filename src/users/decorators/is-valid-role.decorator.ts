@@ -9,7 +9,7 @@ export function IsRole( validationOptions?: ValidationOptions ) {
             options: validationOptions,
             validator: {
                 validate( value: any, args: ValidationArguments ) {
-                    const roles = ['administrador', 'maestro'];
+                    const roles = ['administrador', 'maestro', 'director'];
                     return typeof value === 'string' && roles.includes( value );
                 },
                 defaultMessage( args: ValidationArguments ) {

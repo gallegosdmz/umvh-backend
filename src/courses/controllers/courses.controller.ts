@@ -19,7 +19,7 @@ export class CoursesController {
   }
 
   @Get()
-  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findAll(
     @Query() paginationDto: PaginationDto,
     @GetUser() user: User
@@ -28,7 +28,7 @@ export class CoursesController {
   }
 
   @Get(':id')
-  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.coursesService.findOne(id);
   }

@@ -18,7 +18,7 @@ export class PartialGradesController {
   }
 
   @Get('findAll/:courseGroupStudentId')
-  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findAll(
     @Param('courseGroupStudentId', ParseIntPipe) courseGroupStudentId: number,
     @Query('partial', ParseIntPipe) partial: number
@@ -27,7 +27,7 @@ export class PartialGradesController {
   }
 
   @Get(':id')
-  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.partialGradesService.findOne(id);
   }

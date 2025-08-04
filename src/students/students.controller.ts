@@ -17,7 +17,7 @@ export class StudentsController {
   }
 
   @Get()
-  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findAllByUser(
     @Query() paginationDto: PaginationDto,
   ) {
@@ -25,7 +25,7 @@ export class StudentsController {
   }
 
   @Get('not-in-course-group/:courseGroupId')
-  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findStudentsNotInCourseGroup(
     @Param('courseGroupId', ParseIntPipe) courseGroupId: number,
     @Query() paginationDto: PaginationDto
@@ -37,7 +37,7 @@ export class StudentsController {
   }
 
   @Get(':id')
-  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.studentsService.findOne(id);
   }

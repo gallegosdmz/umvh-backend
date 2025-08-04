@@ -17,7 +17,7 @@ export class PeriodsController {
   }
 
   @Get()
-  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findAll(
     @Query() paginationDto: PaginationDto
   ) {
@@ -25,7 +25,7 @@ export class PeriodsController {
   }
 
   @Get(':id')
-  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.periodsService.findOne(id);
   }

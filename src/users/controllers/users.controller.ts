@@ -17,7 +17,7 @@ export class UsersController {
   }
 
   @Get()
-  @Auth(ValidRoles.administrador)
+  @Auth(ValidRoles.administrador, ValidRoles.director)
   findAll(
     @Query() paginationDto: PaginationDto
   ) {
@@ -25,7 +25,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Auth(ValidRoles.administrador)
+  @Auth(ValidRoles.administrador, ValidRoles.director)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOne(id);
   }

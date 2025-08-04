@@ -18,7 +18,7 @@ export class FinalGradesController {
   }
 
   @Get('findAll/:courseGroupStudentId')
-  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findAll(
     @Param('courseGroupStudentId', ParseIntPipe) courseGroupStudentId: number
   ) {
@@ -26,7 +26,7 @@ export class FinalGradesController {
   }
 
   @Get(':id')
-  @Auth(ValidRoles.administrador, ValidRoles.maestro)
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.finalGradesService.findOne(id);
   }

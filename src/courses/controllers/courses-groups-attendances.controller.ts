@@ -21,7 +21,7 @@ export class CoursesGroupsAttendancesController {
     }
 
     @Get(':courseGroupId')
-    @Auth(ValidRoles.administrador, ValidRoles.maestro)
+    @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
     findAllByCourseGroupAndDate(
         @Param('courseGroupId', ParseIntPipe) courseGroupId: number,
         @Query('date') date: Date
@@ -30,7 +30,7 @@ export class CoursesGroupsAttendancesController {
     }
 
     @Get('student/:courseGroupStudentId')
-    @Auth(ValidRoles.administrador, ValidRoles.maestro)
+    @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
     findAllByStudent(
         @Param('courseGroupStudentId', ParseIntPipe) courseGroupStudentId: number,
         @Query('partial') partial: number
