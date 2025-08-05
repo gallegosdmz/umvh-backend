@@ -64,6 +64,7 @@ export class CoursesService {
       .leftJoinAndSelect('coursesGroupsStudents.coursesGroupsAttendances', 'coursesGroupsAttendances')
       .leftJoinAndSelect('coursesGroupsStudents.student', 'student')
       .where('course.isDeleted = false')
+      .andWhere('courseGroup.isDeleted = false') // Excluir courseGroups borrados
       .andWhere('courseGroup.userId = :userId', { userId: user.id })
       .skip(offset)
       .take(limit);
