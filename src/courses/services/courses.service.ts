@@ -72,6 +72,10 @@ export class CoursesService {
     return await query.getMany();
   }
 
+  async countTotal() {
+    return await this.courseRepository.count({ where: { isDeleted: false } });
+  }
+
   async findOne(id: number) {
     const course = await this.courseRepository.findOne({
       where: { id, isDeleted: false },

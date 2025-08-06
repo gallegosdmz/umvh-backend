@@ -32,6 +32,12 @@ export class GroupsController {
     return this.groupsService.findAllForDirector(paginationDto);
   }
 
+  @Get('count')
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
+  count() {
+    return this.groupsService.countTotal();
+  } 
+
   @Get(':id')
   @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findOne(@Param('id', ParseIntPipe) id: number) {

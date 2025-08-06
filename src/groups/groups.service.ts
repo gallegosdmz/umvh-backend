@@ -69,6 +69,10 @@ export class GroupsService {
     }
   }
 
+  async countTotal() {
+    return await this.groupRepository.count({ where: { isDeleted: false } });
+  }
+
   async findOne(id: number) {
     // TODO: HACER COMPROBACIÓN PARA TRAER SOLO LOS GRUPOS A LOS QUE PERTENEZCA EN CASO DE QUE SEA MAESTRO
 

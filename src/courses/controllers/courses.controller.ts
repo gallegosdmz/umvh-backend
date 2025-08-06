@@ -27,6 +27,12 @@ export class CoursesController {
     return this.coursesService.findAll(paginationDto, user);
   }
 
+  @Get('count')
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
+  count() {
+    return this.coursesService.countTotal();
+  }
+
   @Get(':id')
   @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findOne(@Param('id', ParseIntPipe) id: number) {

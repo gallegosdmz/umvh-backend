@@ -95,6 +95,10 @@ export class StudentsService {
     }
   }
 
+  async countTotal() {
+    return await this.studentRepository.count({ where: { isDeleted: false } });
+  }
+
   async findOne(id: number) {
     const student = await this.studentRepository.findOne({
       where: { id, isDeleted: false },

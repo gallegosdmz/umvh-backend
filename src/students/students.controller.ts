@@ -24,6 +24,12 @@ export class StudentsController {
     return this.studentsService.findAll(paginationDto);
   }
 
+  @Get('count')
+  @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
+  count() {
+    return this.studentsService.countTotal();
+  }
+
   @Get('not-in-course-group/:courseGroupId')
   @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findStudentsNotInCourseGroup(
