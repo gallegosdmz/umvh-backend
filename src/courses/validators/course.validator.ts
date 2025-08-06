@@ -54,6 +54,7 @@ export class CourseValidator extends BaseValidator {
         if (!user) throw new BadRequestException('User is required');
 
         if (user.role === 'administrador') return;
+        if (user.role === 'director') return;
 
         if (courseGroup.user.id !== user.id) throw new UnauthorizedException('User is not authorized');
     }
