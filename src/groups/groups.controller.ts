@@ -24,6 +24,14 @@ export class GroupsController {
     return this.groupsService.findAll(paginationDto);
   }
 
+  @Get('findAllForDirector')
+  @Auth(ValidRoles.administrador, ValidRoles.director)
+  findAllForDirector(
+    @Query() paginationDto: PaginationDto
+  ) {
+    return this.groupsService.findAllForDirector(paginationDto);
+  }
+
   @Get(':id')
   @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   findOne(@Param('id', ParseIntPipe) id: number) {

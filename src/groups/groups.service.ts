@@ -51,6 +51,24 @@ export class GroupsService {
     });
   }
 
+  async findAllForDirector(paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0 } = paginationDto;
+
+    const [groups, total] = await this.groupRepository.findAndCount({
+      where: { isDeleted: false },
+      take: limit,
+      skip: offset,
+      relations: {
+        coursesGroups: { course: true, user: true, coursesGroupsStudents: { coursesGroupsAttendances: true, finalGrades: true, partialEvaluationGrades: true, partialGrades: true }, partialEvaluations: true }
+      }
+    });
+
+    return {
+      groups,
+      total
+    }
+  }
+
   async findOne(id: number) {
     // TODO: HACER COMPROBACIÓN PARA TRAER SOLO LOS GRUPOS A LOS QUE PERTENEZCA EN CASO DE QUE SEA MAESTRO
 
