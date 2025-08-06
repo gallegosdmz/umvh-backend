@@ -59,7 +59,7 @@ export class GroupsService {
       take: limit,
       skip: offset,
       relations: {
-        coursesGroups: { course: true, user: true, coursesGroupsStudents: { coursesGroupsAttendances: true, finalGrades: true, partialEvaluationGrades: true, partialGrades: true }, partialEvaluations: true }
+        coursesGroups: { course: true, user: true, coursesGroupsStudents: { coursesGroupsAttendances: true, finalGrades: true, partialEvaluationGrades: true, partialGrades: true, student: true }, partialEvaluations: true }
       }
     });
 
