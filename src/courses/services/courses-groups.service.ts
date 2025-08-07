@@ -245,10 +245,10 @@ export class CoursesGroupsService {
       throw new NotFoundException(`Course Group with id: ${courseGroupId} not found`);
     }
 
-    // Filtrar solo estudiantes no eliminados
-    const activeStudents = courseGroup.coursesGroupsStudents.filter(
-      cgs => !cgs.isDeleted
-    );
+    // Filtrar solo estudiantes no eliminados y ordenar por ID de menor a mayor
+    const activeStudents = courseGroup.coursesGroupsStudents
+      .filter(cgs => !cgs.isDeleted)
+      .sort((a, b) => a.student.id - b.student.id);
 
     const students = activeStudents.map(cgs => ({
       id: cgs.student.id,
