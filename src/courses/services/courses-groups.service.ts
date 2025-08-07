@@ -226,4 +226,86 @@ export class CoursesGroupsService {
       partialEvaluationGrades,
     };
   }
+
+  async getCompleteData(courseGroupId: number) {
+    const courseGroup = await this.courseGroupRepository.findOne({
+      where: { id: courseGroupId, isDeleted: false },
+      relations: {
+        coursesGroupsStudents: {
+          student: true,
+          coursesGroupsAttendances: true,
+          partialGrades: true,
+          finalGrades: true,
+        },
+        partialEvaluations: true,
+      },
+    });
+
+    if (!courseGroup) {
+      throw new NotFoundException(`Course Group with id: ${courseGroupId} not found`);
+    }
+
+    // Filtrar solo estudiantes no eliminados
+    const activeStudents = courseGroup.coursesGroupsStudents.filter(
+      cgs => !cgs.isDeleted
+    );
+
+    const students = activeStudents.map(cgs => ({
+      id: cgs.student.id,
+      student: {
+        id: cgs.student.id,
+        fullName: cgs.student.fullName,
+        registrationNumber: cgs.student.registrationNumber,
+      },
+      courseGroupStudentId: cgs.id,
+    }));
+
+    const partialGrades = activeStudents.flatMap(cgs =>
+      cgs.partialGrades
+        .filter(pg => !pg.isDeleted)
+        .map(pg => ({
+          courseGroupStudentId: cgs.id,
+          partial: pg.partial,
+          grade: pg.grade,
+        }))
+    );
+
+    const attendances = activeStudents.flatMap(cgs =>
+      cgs.coursesGroupsAttendances.map(att => ({
+        courseGroupStudentId: cgs.id,
+        partial: att.partial,
+        date: new Date(att.date).toISOString().split('T')[0], // Formato YYYY-MM-DD
+        attend: att.attend,
+      }))
+    );
+
+    const finalGrades = activeStudents.flatMap(cgs =>
+      cgs.finalGrades
+        .filter(fg => !fg.isDeleted)
+        .map(fg => ({
+          courseGroupStudentId: cgs.id,
+          gradeOrdinary: fg.gradeOrdinary,
+          gradeExtraordinary: fg.gradeExtraordinary,
+        }))
+    );
+
+    const partialEvaluations = courseGroup.partialEvaluations
+      .filter(pe => !pe.isDeleted)
+      .map(pe => ({
+        id: pe.id,
+        courseGroupId: courseGroup.id,
+        type: pe.type,
+        name: pe.name,
+        partial: pe.partial,
+        slot: pe.slot,
+      }));
+
+    return {
+      students,
+      partialGrades,
+      attendances,
+      finalGrades,
+      partialEvaluations,
+    };
+  }
 }

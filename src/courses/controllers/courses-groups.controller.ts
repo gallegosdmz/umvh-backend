@@ -53,4 +53,10 @@ export class CoursesGroupsController {
     getEvaluationsData(@Param('courseGroupId', ParseIntPipe) courseGroupId: number) {
         return this.coursesGroupsService.getEvaluationsData(courseGroupId);
     }
+
+    @Get(':courseGroupId/complete-data')
+    @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
+    getCompleteData(@Param('courseGroupId', ParseIntPipe) courseGroupId: number) {
+        return this.coursesGroupsService.getCompleteData(courseGroupId);
+    }
 }
