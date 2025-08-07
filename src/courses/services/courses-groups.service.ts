@@ -135,4 +135,82 @@ export class CoursesGroupsService {
       handleDBErrors(error, 'removeByCourseId - course-group');
     }
   }
+
+  async getEvaluationsData(courseGroupId: number) {
+    const courseGroup = await this.courseGroupRepository.findOne({
+      where: { id: courseGroupId, isDeleted: false },
+      relations: {
+        coursesGroupsStudents: {
+          student: true,
+          coursesGroupsAttendances: true,
+          partialGrades: true,
+        },
+        coursesGroupsGradingschemes: true,
+        partialEvaluations: true,
+      },
+    });
+
+    if (!courseGroup) {
+      throw new NotFoundException(`Course Group with id: ${courseGroupId} not found`);
+    }
+
+    // Filtrar solo estudiantes no eliminados
+    const activeStudents = courseGroup.coursesGroupsStudents.filter(
+      cgs => !cgs.isDeleted
+    );
+
+    const students = activeStudents.map(cgs => ({
+      id: cgs.student.id,
+      fullName: cgs.student.fullName,
+      registrationNumber: cgs.student.registrationNumber,
+      courseGroupStudentId: cgs.id,
+    }));
+
+    const partialGrades = activeStudents.flatMap(cgs =>
+      cgs.partialGrades
+        .filter(pg => !pg.isDeleted)
+        .map(pg => ({
+          id: pg.id,
+          courseGroupStudentId: cgs.id,
+          partial: pg.partial,
+          grade: pg.grade,
+        }))
+    );
+
+    const attendances = activeStudents.flatMap(cgs =>
+      cgs.coursesGroupsAttendances.map(att => ({
+        id: att.id,
+        courseGroupStudentId: cgs.id,
+        partial: att.partial,
+        attend: att.attend,
+        date: att.date.toISOString().split('T')[0], // Formato YYYY-MM-DD
+      }))
+    );
+
+    const partialEvaluations = courseGroup.partialEvaluations
+      .filter(pe => !pe.isDeleted)
+      .map(pe => ({
+        id: pe.id,
+        name: pe.name,
+        type: pe.type,
+        slot: pe.slot,
+        partial: pe.partial,
+      }));
+
+    const gradingSchemes = courseGroup.coursesGroupsGradingschemes
+      .filter(gs => !gs.isDeleted)
+      .map(gs => ({
+        id: gs.id,
+        type: gs.type,
+        percentage: gs.percentage,
+      }));
+
+    return {
+      students,
+      partialGrades,
+      attendances,
+      partialEvaluations,
+      gradingSchemes,
+    };
+  }
 }

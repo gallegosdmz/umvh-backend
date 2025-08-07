@@ -47,4 +47,10 @@ export class CoursesGroupsController {
     remove(@Param('id', ParseIntPipe) id: number) {
         return this.coursesGroupsService.remove(id);
     }
+
+    @Get(':courseGroupId/evaluations-data')
+    @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
+    getEvaluationsData(@Param('courseGroupId', ParseIntPipe) courseGroupId: number) {
+        return this.coursesGroupsService.getEvaluationsData(courseGroupId);
+    }
 }
