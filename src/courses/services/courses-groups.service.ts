@@ -144,7 +144,9 @@ export class CoursesGroupsService {
           student: true,
           coursesGroupsAttendances: true,
           partialGrades: true,
-          partialEvaluationGrades: true,
+          partialEvaluationGrades: {
+            partialEvaluation: true,
+          },
         },
         coursesGroupsGradingschemes: true,
         partialEvaluations: true,
