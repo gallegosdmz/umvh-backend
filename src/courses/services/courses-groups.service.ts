@@ -183,7 +183,7 @@ export class CoursesGroupsService {
         courseGroupStudentId: cgs.id,
         partial: att.partial,
         attend: att.attend,
-        date: att.date.toISOString().split('T')[0], // Formato YYYY-MM-DD
+        date: new Date(att.date).toISOString().split('T')[0], // Formato YYYY-MM-DD
       }))
     );
 
