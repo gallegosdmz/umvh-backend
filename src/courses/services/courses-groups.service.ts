@@ -144,6 +144,7 @@ export class CoursesGroupsService {
           student: true,
           coursesGroupsAttendances: true,
           partialGrades: true,
+          partialEvaluationGrades: true,
         },
         coursesGroupsGradingschemes: true,
         partialEvaluations: true,
@@ -205,12 +206,22 @@ export class CoursesGroupsService {
         percentage: gs.percentage,
       }));
 
+    const partialEvaluationGrades = activeStudents.flatMap(cgs =>
+      cgs.partialEvaluationGrades.map(peg => ({
+        id: peg.id,
+        courseGroupStudentId: cgs.id,
+        partialEvaluationId: peg.partialEvaluation.id,
+        grade: peg.grade,
+      }))
+    );
+
     return {
       students,
       partialGrades,
       attendances,
       partialEvaluations,
       gradingSchemes,
+      partialEvaluationGrades,
     };
   }
 }
