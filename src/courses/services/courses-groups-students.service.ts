@@ -76,7 +76,9 @@ export class CoursesGroupsStudentsService {
             const uniqueStudents = await this.courseGroupStudentRepository
                 .createQueryBuilder('cgs')
                 .leftJoinAndSelect('cgs.student', 'student')
-                .where('cgs.courseGroup.group = :groupId', { groupId })
+                .leftJoin('cgs.courseGroup', 'courseGroup')
+                .leftJoin('courseGroup.group', 'group')
+                .where('group.id = :groupId', { groupId })
                 .groupBy('student.id')
                 .addGroupBy('student.fullName')
                 .addGroupBy('student.registrationNumber')
