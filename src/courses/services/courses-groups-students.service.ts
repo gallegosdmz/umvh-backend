@@ -72,17 +72,15 @@ export class CoursesGroupsStudentsService {
         const group = await this.groupService.findOne(groupId);
 
         try {
-            // Consulta para obtener estudiantes únicos del grupo
+            // Consulta para obtener estudiantes únicos del grupo usando DISTINCT
             const uniqueStudents = await this.courseGroupStudentRepository
                 .createQueryBuilder('cgs')
                 .leftJoinAndSelect('cgs.student', 'student')
                 .leftJoin('cgs.courseGroup', 'courseGroup')
                 .leftJoin('courseGroup.group', 'group')
                 .where('group.id = :groupId', { groupId })
-                .groupBy('student.id')
-                .addGroupBy('student.fullName')
-                .addGroupBy('student.registrationNumber')
-                .addGroupBy('student.isDeleted')
+                .distinctOn(['student.id'])
+                .orderBy('student.id', 'ASC')
                 .getMany();
 
             return uniqueStudents;
