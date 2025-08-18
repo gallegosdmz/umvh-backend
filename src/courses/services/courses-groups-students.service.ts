@@ -78,13 +78,10 @@ export class CoursesGroupsStudentsService {
                 .leftJoinAndSelect('cgs.student', 'student')
                 .where('cgs.courseGroup.group = :groupId', { groupId })
                 .groupBy('student.id')
-                .addGroupBy('student.name')
-                .addGroupBy('student.lastName')
-                .addGroupBy('student.email')
+                .addGroupBy('student.fullName')
+                .addGroupBy('student.registrationNumber')
                 .addGroupBy('student.studentId')
                 .addGroupBy('student.isDeleted')
-                .addGroupBy('student.createdAt')
-                .addGroupBy('student.updatedAt')
                 .getMany();
 
             return uniqueStudents;
