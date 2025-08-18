@@ -72,10 +72,22 @@ export class CoursesGroupsStudentsService {
         const group = await this.groupService.findOne(groupId);
 
         try {
-            return await this.courseGroupStudentRepository.find({
-                where: { courseGroup: { group } },
-                relations: { student: true },
-            });
+            // Consulta para obtener estudiantes únicos del grupo
+            const uniqueStudents = await this.courseGroupStudentRepository
+                .createQueryBuilder('cgs')
+                .leftJoinAndSelect('cgs.student', 'student')
+                .where('cgs.courseGroup.group = :groupId', { groupId })
+                .groupBy('student.id')
+                .addGroupBy('student.name')
+                .addGroupBy('student.lastName')
+                .addGroupBy('student.email')
+                .addGroupBy('student.studentId')
+                .addGroupBy('student.isDeleted')
+                .addGroupBy('student.createdAt')
+                .addGroupBy('student.updatedAt')
+                .getMany();
+
+            return uniqueStudents;
             
         } catch (error) {
             handleDBErrors(error, 'findAllByGroup - courses-groups-students');
