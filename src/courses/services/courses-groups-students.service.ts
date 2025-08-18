@@ -82,7 +82,7 @@ export class CoursesGroupsStudentsService {
                 .groupBy('student.id')
                 .addGroupBy('student.fullName')
                 .addGroupBy('student.registrationNumber')
-                .addGroupBy('student.studentId')
+                .addGroupBy('student.student')
                 .addGroupBy('student.isDeleted')
                 .getMany();
 
