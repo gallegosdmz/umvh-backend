@@ -158,6 +158,16 @@ export class CoursesGroupsService {
       throw new NotFoundException(`Course Group with id: ${courseGroupId} not found`);
     }
 
+    // Validar que el grupo exista
+    if (!courseGroup.group) {
+      throw new NotFoundException(`Group not found for Course Group with id: ${courseGroupId}`);
+    }
+
+    // Validar que las relaciones estén cargadas
+    if (!courseGroup.coursesGroupsStudents || !courseGroup.partialEvaluations) {
+      throw new NotFoundException(`Required relations not loaded for Course Group with id: ${courseGroupId}`);
+    }
+
     // Filtrar solo estudiantes no eliminados
     const activeStudents = courseGroup.coursesGroupsStudents.filter(
       cgs => !cgs.isDeleted
@@ -169,7 +179,7 @@ export class CoursesGroupsService {
       fullName: cgs.student.fullName,
       registrationNumber: cgs.student.registrationNumber,
       courseGroupStudentId: cgs.id,
-      semester: courseGroup.group.semester || 1, // Agregar semester
+      semester: courseGroup.group?.semester || 1, // Agregar semester con validación segura
     }));
 
     // ✅ Calificaciones parciales por estudiante
