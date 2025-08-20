@@ -218,15 +218,7 @@ export class CoursesGroupsService {
         .getRawMany()
     ]);
 
-    // ✅ DEBUG: Verificar consultas
-    console.log('🔍 DEBUG - Consultas ejecutadas:');
-    console.log('📊 CourseGroup ID:', courseGroupId);
-    console.log('📊 CourseGroup encontrado:', !!courseGroup);
-    console.log('📊 Students en courseGroup:', courseGroup?.coursesGroupsStudents?.length || 0);
-    console.log('📊 Partial Evaluations:', courseGroup?.partialEvaluations?.length || 0);
-    console.log('📊 Partial Grades encontrados:', partialGrades.length);
-    console.log('📊 Attendances encontradas:', attendances.length);
-    console.log('📊 Partial Evaluation Grades encontrados:', partialEvaluationGrades.length);
+
 
     // ✅ Estudiantes con datos mínimos necesarios
     const students = courseGroup.coursesGroupsStudents
@@ -260,114 +252,9 @@ export class CoursesGroupsService {
         percentage: gs.percentage,
       }));
 
-    // ✅ DEBUG: Verificar datos antes de agrupar
-    console.log('🔍 DEBUG - Datos antes de agrupar:');
-    if (partialEvaluationGrades.length > 0) {
-      console.log('📊 Sample Grade:', partialEvaluationGrades[0]);
-    }
-    if (attendances.length > 0) {
-      console.log('📊 Sample Attendance:', attendances[0]);
-    }
 
-    // ✅ NUEVO: Calificaciones agrupadas por estudiante (SUPER OPTIMIZADO)
-    const studentGrades = {};
-    
-    // Inicializar estructura para cada estudiante y parcial
-    students.forEach(student => {
-      studentGrades[student.courseGroupStudentId] = {};
-      
-      // Obtener el máximo parcial de las evaluaciones
-      const maxPartial = Math.max(...courseGroup.partialEvaluations
-        .filter(pe => !pe.isDeleted)
-        .map(pe => pe.partial), 0);
-      
-      for (let partial = 1; partial <= maxPartial; partial++) {
-        studentGrades[student.courseGroupStudentId][partial] = {
-          actividades: [],
-          evidencias: [],
-          producto: null,
-          examen: null
-        };
-      }
-    });
 
-    // Agrupar calificaciones por estudiante y parcial
-    partialEvaluationGrades.forEach(grade => {
-      const studentId = grade.courseGroupStudentId;
-      const partial = grade.evaluationPartial;
-      
-      if (!studentGrades[studentId]) {
-        studentGrades[studentId] = {};
-      }
-      if (!studentGrades[studentId][partial]) {
-        studentGrades[studentId][partial] = {
-          actividades: [],
-          evidencias: [],
-          producto: null,
-          examen: null
-        };
-      }
-      
-      // Asignar según el tipo
-      if (grade.evaluationType === 'Actividades') {
-        // Asegurar que el array tenga el tamaño correcto
-        while (studentGrades[studentId][partial].actividades.length <= grade.evaluationSlot) {
-          studentGrades[studentId][partial].actividades.push(null);
-        }
-        studentGrades[studentId][partial].actividades[grade.evaluationSlot] = {
-          slot: grade.evaluationSlot,
-          grade: grade.grade,
-          id: grade.id
-        };
-      } else if (grade.evaluationType === 'Evidencias') {
-        // Asegurar que el array tenga el tamaño correcto
-        while (studentGrades[studentId][partial].evidencias.length <= grade.evaluationSlot) {
-          studentGrades[studentId][partial].evidencias.push(null);
-        }
-        studentGrades[studentId][partial].evidencias[grade.evaluationSlot] = {
-          slot: grade.evaluationSlot,
-          grade: grade.grade,
-          id: grade.id
-        };
-      } else if (grade.evaluationType === 'Producto') {
-        studentGrades[studentId][partial].producto = {
-          grade: grade.grade,
-          id: grade.id
-        };
-      } else if (grade.evaluationType === 'Examen') {
-        studentGrades[studentId][partial].examen = {
-          grade: grade.grade,
-          id: grade.id
-        };
-      }
-    });
 
-    // ✅ NUEVO: Asistencias agrupadas por estudiante (SUPER OPTIMIZADO)
-    const studentAttendances = {};
-    
-    // Inicializar estructura para cada estudiante
-    students.forEach(student => {
-      studentAttendances[student.courseGroupStudentId] = {};
-    });
-    
-    // Agrupar asistencias por estudiante y parcial
-    attendances.forEach(att => {
-      const studentId = att.courseGroupStudentId;
-      const partial = att.partial;
-      
-      if (!studentAttendances[studentId]) {
-        studentAttendances[studentId] = {};
-      }
-      if (!studentAttendances[studentId][partial]) {
-        studentAttendances[studentId][partial] = [];
-      }
-      
-      studentAttendances[studentId][partial].push({
-        date: new Date(att.date).toISOString().split('T')[0],
-        attend: att.attend,
-        id: att.id
-      });
-    });
 
     // ✅ Formatear datos para la respuesta
     const formattedPartialGrades = partialGrades.map(pg => ({
@@ -397,14 +284,6 @@ export class CoursesGroupsService {
       evaluationPartial: peg.evaluationPartial,
     }));
 
-    // ✅ DEBUG: Verificar que los datos se estén procesando correctamente
-    console.log('🔍 DEBUG - Datos procesados:');
-    console.log('📊 Students:', students.length);
-    console.log('📊 Partial Grades:', formattedPartialGrades.length);
-    console.log('📊 Attendances:', formattedAttendances.length);
-    console.log('📊 Partial Evaluation Grades:', formattedPartialEvaluationGrades.length);
-    console.log('📊 Student Grades Keys:', Object.keys(studentGrades));
-    console.log('📊 Student Attendances Keys:', Object.keys(studentAttendances));
 
     // Retornar estructura optimizada
     return {
@@ -413,9 +292,7 @@ export class CoursesGroupsService {
       attendances: formattedAttendances,
       partialEvaluations,
       gradingSchemes,
-      partialEvaluationGrades: formattedPartialEvaluationGrades,
-      studentGrades,        // ✅ NUEVO: Datos agrupados
-      studentAttendances    // ✅ NUEVO: Asistencias agrupadas
+      partialEvaluationGrades: formattedPartialEvaluationGrades
     };
   }
 

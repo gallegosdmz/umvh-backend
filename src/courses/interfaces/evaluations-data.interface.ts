@@ -55,23 +55,4 @@ export interface OptimizedEvaluationsDataResponse {
     evaluationSlot: number;
     evaluationPartial: number;
   }>;
-  
-  // ✅ NUEVO: Calificaciones agrupadas por estudiante (SUPER OPTIMIZADO)
-  studentGrades: {
-    [courseGroupStudentId: number]: {
-      [partial: number]: {
-        actividades: Array<{slot: number, grade: number, id: number} | null>;
-        evidencias: Array<{slot: number, grade: number, id: number} | null>;
-        producto: {grade: number, id: number} | null;
-        examen: {grade: number, id: number} | null;
-      };
-    };
-  };
-  
-  // ✅ NUEVO: Asistencias agrupadas por estudiante (SUPER OPTIMIZADO)
-  studentAttendances: {
-    [courseGroupStudentId: number]: {
-      [partial: number]: Array<{date: string, attend: number, id: number}>;
-    };
-  };
 }
