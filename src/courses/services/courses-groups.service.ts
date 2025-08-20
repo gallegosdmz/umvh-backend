@@ -138,7 +138,7 @@ export class CoursesGroupsService {
   }
 
   async getEvaluationsData(courseGroupId: number): Promise<OptimizedEvaluationsDataResponse> {
-    // ✅ CONSULTA PRINCIPAL OPTIMIZADA - Usar QueryBuilder para mejor rendimiento
+    // ✅ CONSULTA PRINCIPAL OPTIMIZADA - Solo datos básicos
     const courseGroup = await this.courseGroupRepository
       .createQueryBuilder('cg')
       .leftJoinAndSelect('cg.group', 'g')
@@ -146,17 +146,11 @@ export class CoursesGroupsService {
       .leftJoinAndSelect('cgs.student', 's')
       .leftJoinAndSelect('cg.partialEvaluations', 'pe')
       .leftJoinAndSelect('cg.coursesGroupsGradingschemes', 'cggs')
-      .leftJoinAndSelect('cgs.partialGrades', 'pg')
-      .leftJoinAndSelect('cgs.coursesGroupsAttendances', 'cga')
-      .leftJoinAndSelect('cgs.partialEvaluationGrades', 'peg')
-      .leftJoinAndSelect('peg.partialEvaluation', 'pev')
       .where('cg.id = :courseGroupId', { courseGroupId })
       .andWhere('cg.isDeleted = :isDeleted', { isDeleted: false })
       .andWhere('cgs.isDeleted = :cgsIsDeleted', { cgsIsDeleted: false })
       .andWhere('pe.isDeleted = :peIsDeleted', { peIsDeleted: false })
       .andWhere('cggs.isDeleted = :cggsIsDeleted', { cggsIsDeleted: false })
-      .andWhere('pg.isDeleted = :pgIsDeleted', { pgIsDeleted: false })
-      .andWhere('pev.isDeleted = :pevIsDeleted', { pevIsDeleted: false })
       .getOne();
 
     if (!courseGroup) {
@@ -167,12 +161,72 @@ export class CoursesGroupsService {
       throw new NotFoundException(`Group not found for Course Group with id: ${courseGroupId}`);
     }
 
+    // ✅ CONSULTAS SEPARADAS OPTIMIZADAS - Mucho más rápidas
+    const [partialGrades, attendances, partialEvaluationGrades] = await Promise.all([
+      // Calificaciones parciales
+      this.courseGroupRepository.manager
+        .createQueryBuilder()
+        .select([
+          'pg.id as id',
+          'cgs.id as courseGroupStudentId',
+          'pg.partial as partial',
+          'pg.grade as grade',
+          'pg.date as date'
+        ])
+        .from('partial_grades', 'pg')
+        .innerJoin('course_group_students', 'cgs', 'pg.courseGroupStudentId = cgs.id')
+        .where('cgs.courseGroupId = :courseGroupId', { courseGroupId })
+        .andWhere('cgs.isDeleted = :isDeleted', { isDeleted: false })
+        .andWhere('pg.isDeleted = :pgIsDeleted', { pgIsDeleted: false })
+        .getRawMany(),
+
+      // Asistencias
+      this.courseGroupRepository.manager
+        .createQueryBuilder()
+        .select([
+          'cga.id as id',
+          'cgs.id as courseGroupStudentId',
+          'cga.partial as partial',
+          'cga.attend as attend',
+          'cga.date as date'
+        ])
+        .from('course_group_attendances', 'cga')
+        .innerJoin('course_group_students', 'cgs', 'cga.courseGroupStudentId = cgs.id')
+        .where('cgs.courseGroupId = :courseGroupId', { courseGroupId })
+        .andWhere('cgs.isDeleted = :isDeleted', { isDeleted: false })
+        .getRawMany(),
+
+      // Calificaciones de evaluaciones
+      this.courseGroupRepository.manager
+        .createQueryBuilder()
+        .select([
+          'peg.id as id',
+          'cgs.id as courseGroupStudentId',
+          'peg.partialEvaluationId as partialEvaluationId',
+          'peg.grade as grade',
+          'pe.name as evaluationName',
+          'pe.type as evaluationType',
+          'pe.slot as evaluationSlot',
+          'pe.partial as evaluationPartial'
+        ])
+        .from('partial_evaluation_grades', 'peg')
+        .innerJoin('course_group_students', 'cgs', 'peg.courseGroupStudentId = cgs.id')
+        .innerJoin('partial_evaluations', 'pe', 'peg.partialEvaluationId = pe.id')
+        .where('cgs.courseGroupId = :courseGroupId', { courseGroupId })
+        .andWhere('cgs.isDeleted = :isDeleted', { isDeleted: false })
+        .andWhere('pe.isDeleted = :peIsDeleted', { peIsDeleted: false })
+        .getRawMany()
+    ]);
+
     // ✅ DEBUG: Verificar consultas
     console.log('🔍 DEBUG - Consultas ejecutadas:');
     console.log('📊 CourseGroup ID:', courseGroupId);
     console.log('📊 CourseGroup encontrado:', !!courseGroup);
     console.log('📊 Students en courseGroup:', courseGroup?.coursesGroupsStudents?.length || 0);
     console.log('📊 Partial Evaluations:', courseGroup?.partialEvaluations?.length || 0);
+    console.log('📊 Partial Grades encontrados:', partialGrades.length);
+    console.log('📊 Attendances encontradas:', attendances.length);
+    console.log('📊 Partial Evaluation Grades encontrados:', partialEvaluationGrades.length);
 
     // ✅ Estudiantes con datos mínimos necesarios
     const students = courseGroup.coursesGroupsStudents
@@ -184,34 +238,6 @@ export class CoursesGroupsService {
         courseGroupStudentId: cgs.id,
         semester: courseGroup.group.semester || 1,
       }));
-
-    // ✅ Calificaciones parciales por estudiante
-    const partialGrades = courseGroup.coursesGroupsStudents
-      .filter(cgs => !cgs.isDeleted)
-      .flatMap(cgs =>
-        cgs.partialGrades
-          .filter(pg => !pg.isDeleted)
-          .map(pg => ({
-            id: pg.id,
-            courseGroupStudentId: cgs.id,
-            partial: pg.partial,
-            grade: pg.grade,
-            date: pg.date ? new Date(pg.date).toISOString().split('T')[0] : null,
-          }))
-      );
-
-    // ✅ Asistencias agrupadas por estudiante y parcial
-    const attendances = courseGroup.coursesGroupsStudents
-      .filter(cgs => !cgs.isDeleted)
-      .flatMap(cgs =>
-        cgs.coursesGroupsAttendances.map(att => ({
-          id: att.id,
-          courseGroupStudentId: cgs.id,
-          partial: att.partial,
-          attend: att.attend,
-          date: new Date(att.date).toISOString().split('T')[0],
-        }))
-      );
 
     // ✅ Evaluaciones definidas (sin duplicar datos)
     const partialEvaluations = courseGroup.partialEvaluations
@@ -234,29 +260,11 @@ export class CoursesGroupsService {
         percentage: gs.percentage,
       }));
 
-    // ✅ Calificaciones de evaluaciones (DATOS PLANOS)
-    const partialEvaluationGrades = courseGroup.coursesGroupsStudents
-      .filter(cgs => !cgs.isDeleted)
-      .flatMap(cgs =>
-        cgs.partialEvaluationGrades.map(peg => ({
-          id: peg.id,
-          courseGroupStudentId: cgs.id,
-          partialEvaluationId: peg.partialEvaluation.id,
-          grade: peg.grade,
-          evaluationName: peg.partialEvaluation.name,
-          evaluationType: peg.partialEvaluation.type,
-          evaluationSlot: peg.partialEvaluation.slot,
-          evaluationPartial: peg.partialEvaluation.partial,
-        }))
-      );
-
     // ✅ DEBUG: Verificar datos antes de agrupar
     console.log('🔍 DEBUG - Datos antes de agrupar:');
-    console.log('📊 Partial Evaluation Grades encontrados:', partialEvaluationGrades.length);
     if (partialEvaluationGrades.length > 0) {
       console.log('📊 Sample Grade:', partialEvaluationGrades[0]);
     }
-    console.log('📊 Attendances encontradas:', attendances.length);
     if (attendances.length > 0) {
       console.log('📊 Sample Attendance:', attendances[0]);
     }
@@ -288,14 +296,10 @@ export class CoursesGroupsService {
       const studentId = grade.courseGroupStudentId;
       const partial = grade.evaluationPartial;
       
-      console.log(`🔍 Procesando grade: studentId=${studentId}, partial=${partial}, type=${grade.evaluationType}`);
-      
       if (!studentGrades[studentId]) {
-        console.log(`⚠️ Creando estructura para studentId=${studentId}`);
         studentGrades[studentId] = {};
       }
       if (!studentGrades[studentId][partial]) {
-        console.log(`⚠️ Creando estructura para studentId=${studentId}, partial=${partial}`);
         studentGrades[studentId][partial] = {
           actividades: [],
           evidencias: [],
@@ -315,7 +319,6 @@ export class CoursesGroupsService {
           grade: grade.grade,
           id: grade.id
         };
-        console.log(`✅ Asignada actividad: slot=${grade.evaluationSlot}, grade=${grade.grade}`);
       } else if (grade.evaluationType === 'Evidencias') {
         // Asegurar que el array tenga el tamaño correcto
         while (studentGrades[studentId][partial].evidencias.length <= grade.evaluationSlot) {
@@ -326,19 +329,16 @@ export class CoursesGroupsService {
           grade: grade.grade,
           id: grade.id
         };
-        console.log(`✅ Asignada evidencia: slot=${grade.evaluationSlot}, grade=${grade.grade}`);
       } else if (grade.evaluationType === 'Producto') {
         studentGrades[studentId][partial].producto = {
           grade: grade.grade,
           id: grade.id
         };
-        console.log(`✅ Asignado producto: grade=${grade.grade}`);
       } else if (grade.evaluationType === 'Examen') {
         studentGrades[studentId][partial].examen = {
           grade: grade.grade,
           id: grade.id
         };
-        console.log(`✅ Asignado examen: grade=${grade.grade}`);
       }
     });
 
@@ -355,14 +355,10 @@ export class CoursesGroupsService {
       const studentId = att.courseGroupStudentId;
       const partial = att.partial;
       
-      console.log(`🔍 Procesando attendance: studentId=${studentId}, partial=${partial}`);
-      
       if (!studentAttendances[studentId]) {
-        console.log(`⚠️ Creando estructura para studentId=${studentId}`);
         studentAttendances[studentId] = {};
       }
       if (!studentAttendances[studentId][partial]) {
-        console.log(`⚠️ Creando estructura para studentId=${studentId}, partial=${partial}`);
         studentAttendances[studentId][partial] = [];
       }
       
@@ -371,34 +367,53 @@ export class CoursesGroupsService {
         attend: att.attend,
         id: att.id
       });
-      console.log(`✅ Asistencia agregada: date=${att.date}, attend=${att.attend}`);
     });
+
+    // ✅ Formatear datos para la respuesta
+    const formattedPartialGrades = partialGrades.map(pg => ({
+      id: pg.id,
+      courseGroupStudentId: pg.courseGroupStudentId,
+      partial: pg.partial,
+      grade: pg.grade,
+      date: pg.date ? new Date(pg.date).toISOString().split('T')[0] : null,
+    }));
+
+    const formattedAttendances = attendances.map(att => ({
+      id: att.id,
+      courseGroupStudentId: att.courseGroupStudentId,
+      partial: att.partial,
+      attend: att.attend,
+      date: new Date(att.date).toISOString().split('T')[0],
+    }));
+
+    const formattedPartialEvaluationGrades = partialEvaluationGrades.map(peg => ({
+      id: peg.id,
+      courseGroupStudentId: peg.courseGroupStudentId,
+      partialEvaluationId: peg.partialEvaluationId,
+      grade: peg.grade,
+      evaluationName: peg.evaluationName,
+      evaluationType: peg.evaluationType,
+      evaluationSlot: peg.evaluationSlot,
+      evaluationPartial: peg.evaluationPartial,
+    }));
 
     // ✅ DEBUG: Verificar que los datos se estén procesando correctamente
     console.log('🔍 DEBUG - Datos procesados:');
     console.log('📊 Students:', students.length);
-    console.log('📊 Partial Grades:', partialGrades.length);
-    console.log('📊 Attendances:', attendances.length);
-    console.log('📊 Partial Evaluation Grades:', partialEvaluationGrades.length);
+    console.log('📊 Partial Grades:', formattedPartialGrades.length);
+    console.log('📊 Attendances:', formattedAttendances.length);
+    console.log('📊 Partial Evaluation Grades:', formattedPartialEvaluationGrades.length);
     console.log('📊 Student Grades Keys:', Object.keys(studentGrades));
     console.log('📊 Student Attendances Keys:', Object.keys(studentAttendances));
-    
-    // Verificar algunos datos específicos
-    if (partialEvaluationGrades.length > 0) {
-      console.log('📊 Sample Grade:', partialEvaluationGrades[0]);
-    }
-    if (attendances.length > 0) {
-      console.log('📊 Sample Attendance:', attendances[0]);
-    }
 
     // Retornar estructura optimizada
     return {
       students,
-      partialGrades,
-      attendances,
+      partialGrades: formattedPartialGrades,
+      attendances: formattedAttendances,
       partialEvaluations,
       gradingSchemes,
-      partialEvaluationGrades,
+      partialEvaluationGrades: formattedPartialEvaluationGrades,
       studentGrades,        // ✅ NUEVO: Datos agrupados
       studentAttendances    // ✅ NUEVO: Asistencias agrupadas
     };
