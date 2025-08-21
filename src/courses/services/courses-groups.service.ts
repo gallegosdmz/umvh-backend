@@ -151,7 +151,7 @@ export class CoursesGroupsService {
       .innerJoin("students", "s", "s.id = cgs.studentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
       .andWhere("cgs.isDeleted = false")
-      .getRawMany();
+      .getMany();
 
     // Partial Grades
     const partialGrades = await this.dataSource
@@ -165,7 +165,7 @@ export class CoursesGroupsService {
       .from("partial_grades", "pg")
       .innerJoin("course_group_students", "cgs", "cgs.id = pg.courseGroupStudentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
-      .getRawMany();
+      .getMany();
 
     // Attendances
     const attendances = await this.dataSource
@@ -180,7 +180,7 @@ export class CoursesGroupsService {
       .from("course_group_attendances", "a")
       .innerJoin("course_group_students", "cgs", "cgs.id = a.courseGroupStudentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
-      .getRawMany();
+      .getMany();
 
     // Partial Evaluations
     const partialEvaluations = await this.dataSource
@@ -194,7 +194,7 @@ export class CoursesGroupsService {
       ])
       .from("partial_evaluations", "pe")
       .where("pe.courseGroupId = :courseGroupId", { courseGroupId })
-      .getRawMany();
+      .getMany();
 
     // Grading Schemes
     const gradingSchemes = await this.dataSource
@@ -206,7 +206,7 @@ export class CoursesGroupsService {
       ])
       .from("course_group_gradingschemes", "gs")
       .where("gs.courseGroupId = :courseGroupId", { courseGroupId })
-      .getRawMany();
+      .getMany();
 
     // Partial Evaluation Grades
     const partialEvaluationGrades = await this.dataSource
@@ -220,7 +220,7 @@ export class CoursesGroupsService {
       .from("partial_evaluation_grades", "peg")
       .innerJoin("course_group_students", "cgs", "cgs.id = peg.courseGroupStudentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
-      .getRawMany();
+      .getMany();
 
     return {
       students,
