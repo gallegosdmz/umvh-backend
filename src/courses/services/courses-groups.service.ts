@@ -147,7 +147,7 @@ export class CoursesGroupsService {
         "s.registrationNumber AS registrationNumber",
         "cgs.id AS courseGroupStudentId",
       ])
-      .from("coursesGroupsStudents", "cgs")
+      .from("course_group_students", "cgs")
       .innerJoin("students", "s", "s.id = cgs.studentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
       .andWhere("cgs.isDeleted = false")
@@ -162,8 +162,8 @@ export class CoursesGroupsService {
         "pg.partial AS partial",
         "pg.grade AS grade",
       ])
-      .from("partialGrades", "pg")
-      .innerJoin("coursesGroupsStudents", "cgs", "cgs.id = pg.courseGroupStudentId")
+      .from("partial_grades", "pg")
+      .innerJoin("course_group_students", "cgs", "cgs.id = pg.courseGroupStudentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
       .getRawMany();
 
@@ -177,8 +177,8 @@ export class CoursesGroupsService {
         "a.attend AS attend",
         "TO_CHAR(a.date, 'YYYY-MM-DD') AS date",
       ])
-      .from("coursesGroupsAttendances", "a")
-      .innerJoin("coursesGroupsStudents", "cgs", "cgs.id = a.courseGroupStudentId")
+      .from("course_group_attendances", "a")
+      .innerJoin("course_group_students", "cgs", "cgs.id = a.courseGroupStudentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
       .getRawMany();
 
@@ -192,7 +192,7 @@ export class CoursesGroupsService {
         "pe.slot AS slot",
         "pe.partial AS partial",
       ])
-      .from("partialEvaluations", "pe")
+      .from("partial_evaluations", "pe")
       .where("pe.courseGroupId = :courseGroupId", { courseGroupId })
       .getRawMany();
 
@@ -204,7 +204,7 @@ export class CoursesGroupsService {
         "gs.type AS type",
         "gs.percentage AS percentage",
       ])
-      .from("coursesGroupsGradingschemes", "gs")
+      .from("course_group_gradingschemes", "gs")
       .where("gs.courseGroupId = :courseGroupId", { courseGroupId })
       .getRawMany();
 
@@ -217,8 +217,8 @@ export class CoursesGroupsService {
         "peg.partialEvaluationId AS partialEvaluationId",
         "peg.grade AS grade",
       ])
-      .from("partialEvaluationGrades", "peg")
-      .innerJoin("coursesGroupsStudents", "cgs", "cgs.id = peg.courseGroupStudentId")
+      .from("partial_evaluation_grades", "peg")
+      .innerJoin("course_group_students", "cgs", "cgs.id = peg.courseGroupStudentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
       .getRawMany();
 
