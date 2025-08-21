@@ -151,7 +151,13 @@ export class CoursesGroupsService {
       .innerJoin("students", "s", "s.id = cgs.studentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
       .andWhere("cgs.isDeleted = false")
-      .getMany();
+      .getRawMany()
+      .then(result => result.map(student => ({
+        id: student.id,
+        fullName: student.fullname,
+        registrationNumber: student.registrationnumber,
+        courseGroupStudentId: student.coursegroupstudentid
+      })));
 
     // Partial Grades
     const partialGrades = await this.dataSource
@@ -165,7 +171,13 @@ export class CoursesGroupsService {
       .from("partial_grades", "pg")
       .innerJoin("course_group_students", "cgs", "cgs.id = pg.courseGroupStudentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
-      .getMany();
+      .getRawMany()
+      .then(result => result.map(partialGrade => ({
+        id: partialGrade.id,
+        courseGroupStudentId: partialGrade.coursegroupstudentid,
+        partial: partialGrade.partial,
+        grade: partialGrade.grade
+      })));
 
     // Attendances
     const attendances = await this.dataSource
@@ -180,7 +192,14 @@ export class CoursesGroupsService {
       .from("course_group_attendances", "a")
       .innerJoin("course_group_students", "cgs", "cgs.id = a.courseGroupStudentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
-      .getMany();
+      .getRawMany()
+      .then(results => results.map(attendance => ({
+        id: attendance.id,
+        courseGroupStudentId: attendance.coursegroupstudentid,
+        partial: attendance.partial,
+        attend: attendance.attend,
+        date: attendance.date
+      })));
 
     // Partial Evaluations
     const partialEvaluations = await this.dataSource
@@ -194,7 +213,14 @@ export class CoursesGroupsService {
       ])
       .from("partial_evaluations", "pe")
       .where("pe.courseGroupId = :courseGroupId", { courseGroupId })
-      .getMany();
+      .getRawMany()
+      .then(results => results.map(evaluation => ({
+        id: evaluation.id,
+        name: evaluation.name,
+        type: evaluation.type,
+        slot: evaluation.slot,
+        partial: evaluation.partial
+      })));
 
     // Grading Schemes
     const gradingSchemes = await this.dataSource
@@ -206,7 +232,12 @@ export class CoursesGroupsService {
       ])
       .from("course_group_gradingschemes", "gs")
       .where("gs.courseGroupId = :courseGroupId", { courseGroupId })
-      .getMany();
+      .getRawMany()
+      .then(results => results.map(scheme => ({
+        id: scheme.id,
+        type: scheme.type,
+        percentage: scheme.percentage
+      })));
 
     // Partial Evaluation Grades
     const partialEvaluationGrades = await this.dataSource
@@ -220,7 +251,13 @@ export class CoursesGroupsService {
       .from("partial_evaluation_grades", "peg")
       .innerJoin("course_group_students", "cgs", "cgs.id = peg.courseGroupStudentId")
       .where("cgs.courseGroupId = :courseGroupId", { courseGroupId })
-      .getMany();
+      .getRawMany()
+      .then(results => results.map(grade => ({
+        id: grade.id,
+        courseGroupStudentId: grade.coursegroupstudentid,
+        partialEvaluationId: grade.partialevaluationid,
+        grade: grade.grade
+      })));
 
     return {
       students,
