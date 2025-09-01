@@ -380,4 +380,126 @@ export class CoursesGroupsService {
       partialEvaluations,
     };
   }
+
+  async getFinalData(courseGroupId: number) {
+    // Verificar que el courseGroup existe
+    const courseGroupExists = await this.courseGroupRepository
+      .createQueryBuilder('cg')
+      .where('cg.id = :courseGroupId', { courseGroupId })
+      .andWhere('cg.isDeleted = :isDeleted', { isDeleted: false })
+      .getExists();
+
+    if (!courseGroupExists) {
+      throw new NotFoundException(`Course Group with id: ${courseGroupId} not found`);
+    }
+
+    // Ejecutar todas las consultas en paralelo para máxima velocidad
+    const [
+      students,
+      partialGrades,
+      finalGrades,
+      attendances
+    ] = await Promise.all([
+      // Obtener estudiantes con información del semestre
+      this.courseGroupRepository
+        .createQueryBuilder('cg')
+        .select([
+          's.id as id',
+          's.fullName as fullName',
+          'g.semester as semester',
+          's.registrationNumber as registrationNumber',
+          'cgs.id as courseGroupStudentId'
+        ])
+        .innerJoin('cg.coursesGroupsStudents', 'cgs')
+        .innerJoin('cgs.student', 's')
+        .innerJoin('cg.group', 'g')
+        .where('cg.id = :courseGroupId', { courseGroupId })
+        .andWhere('cg.isDeleted = :isDeleted', { isDeleted: false })
+        .andWhere('cgs.isDeleted = :cgsIsDeleted', { cgsIsDeleted: false })
+        .andWhere('s.isDeleted = :sIsDeleted', { sIsDeleted: false })
+        .orderBy('s.id', 'ASC')
+        .getRawMany(),
+
+      // Obtener calificaciones parciales
+      this.courseGroupRepository
+        .createQueryBuilder('cg')
+        .select([
+          'cgs.id as courseGroupStudentId',
+          'pg.partial as partial',
+          'pg.grade as grade',
+          'TO_CHAR(pg.date, \'YYYY-MM-DD\') as date'
+        ])
+        .innerJoin('cg.coursesGroupsStudents', 'cgs')
+        .innerJoin('cgs.partialGrades', 'pg')
+        .where('cg.id = :courseGroupId', { courseGroupId })
+        .andWhere('cg.isDeleted = :isDeleted', { isDeleted: false })
+        .andWhere('cgs.isDeleted = :cgsIsDeleted', { cgsIsDeleted: false })
+        .andWhere('pg.isDeleted = :pgIsDeleted', { pgIsDeleted: false })
+        .getRawMany(),
+
+      // Obtener calificaciones finales
+      this.courseGroupRepository
+        .createQueryBuilder('cg')
+        .select([
+          'cgs.id as courseGroupStudentId',
+          'fg.grade as grade',
+          'fg.gradeOrdinary as gradeOrdinary',
+          'fg.gradeExtraordinary as gradeExtraordinary',
+          'TO_CHAR(fg.date, \'YYYY-MM-DD\') as date'
+        ])
+        .innerJoin('cg.coursesGroupsStudents', 'cgs')
+        .innerJoin('cgs.finalGrades', 'fg')
+        .where('cg.id = :courseGroupId', { courseGroupId })
+        .andWhere('cg.isDeleted = :isDeleted', { isDeleted: false })
+        .andWhere('cgs.isDeleted = :cgsIsDeleted', { cgsIsDeleted: false })
+        .andWhere('fg.isDeleted = :fgIsDeleted', { fgIsDeleted: false })
+        .getRawMany(),
+
+      // Obtener asistencias
+      this.courseGroupRepository
+        .createQueryBuilder('cg')
+        .select([
+          'cgs.id as courseGroupStudentId',
+          'cga.partial as partial',
+          'cga.attend as attend',
+          'TO_CHAR(cga.date, \'YYYY-MM-DD\') as date'
+        ])
+        .innerJoin('cg.coursesGroupsStudents', 'cgs')
+        .innerJoin('cgs.coursesGroupsAttendances', 'cga')
+        .where('cg.id = :courseGroupId', { courseGroupId })
+        .andWhere('cg.isDeleted = :isDeleted', { isDeleted: false })
+        .andWhere('cgs.isDeleted = :cgsIsDeleted', { cgsIsDeleted: false })
+        .getRawMany()
+    ]);
+
+    return {
+      students: students.map(student => ({
+        id: student.id,
+        fullName: student.fullname,
+        semester: student.semester,
+        registrationNumber: student.registrationnumber,
+        courseGroupStudentId: student.coursegroupstudentid
+      })),
+      partialGrades: partialGrades.map(partialGrade => ({
+        courseGroupStudentId: partialGrade.coursegroupstudentid,
+        partial: partialGrade.partial,
+        grade: partialGrade.grade,
+        date: partialGrade.date
+      })),
+      finalGrades: finalGrades.map(finalGrade => ({
+        courseGroupStudentId: finalGrade.coursegroupstudentid,
+        grade: finalGrade.grade,
+        gradeOrdinary: finalGrade.gradeordinary,
+        gradeExtraordinary: finalGrade.gradeextraordinary,
+        date: finalGrade.date
+      })),
+      attendances: attendances.map(attendance => ({
+        courseGroupStudentId: attendance.coursegroupstudentid,
+        partial: attendance.partial,
+        attend: attendance.attend,
+        date: attendance.date
+      }))
+    };
+  }
+
 }
