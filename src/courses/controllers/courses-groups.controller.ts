@@ -59,4 +59,10 @@ export class CoursesGroupsController {
     getCompleteData(@Param('courseGroupId', ParseIntPipe) courseGroupId: number) {
         return this.coursesGroupsService.getCompleteData(courseGroupId);
     }
+
+    @Get(':courseGroupId/final-data')
+    @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
+    getFinalData(@Param('courseGroupId', ParseIntPipe) courseGroupId: number) {
+        return this.coursesGroupsService.getFinalData(courseGroupId);
+    }
 }
