@@ -33,7 +33,7 @@ export class GroupsController {
   }
 
   @Get(':groupId/find-boletas')
-  @Auth()
+  @Auth(ValidRoles.administrador, ValidRoles.director)
   findBoletas(
     @Param('groupId') groupId: number
   ) {
