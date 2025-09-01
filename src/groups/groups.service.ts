@@ -8,6 +8,21 @@ import { handleDBErrors } from 'src/utils/errors';
 import { PeriodsService } from 'src/periods/periods.service';
 import { PaginationDto } from 'src/core/dtos/pagination.dto';
 
+export interface IQuery {
+  semester: number;
+  groupName: string;
+  period: string;
+  students: {
+    registrationNumber: string;
+    fullName: string;
+    courses: {
+      name: string;
+      gradeOrd: number;
+      gradeExt: number;
+    }[]
+  }[]
+}
+
 @Injectable()
 export class GroupsService {
   constructor(
@@ -67,6 +82,79 @@ export class GroupsService {
       groups,
       total
     }
+  }
+
+  async findBoletas(groupId: number) {
+    const query = this.groupRepository
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.period', 'period')
+      .leftJoinAndSelect('group.coursesGroups', 'courseGroup')
+      .leftJoinAndSelect('courseGroup.course', 'course')
+      .leftJoinAndSelect('courseGroup.coursesGroupsStudents', 'courseGroupStudent')
+      .leftJoinAndSelect('courseGroupStudent.student', 'student')
+      .leftJoinAndSelect('courseGroupStudent.finalGrades', 'finalGrade')
+      .where('group.id = :groupId', { groupId })
+      .andWhere('group.isDeleted = :isDeleted', { isDeleted: false })
+      .andWhere('courseGroup.isDeleted = :courseGroupIsDeleted', { courseGroupIsDeleted: false })
+      .andWhere('courseGroupStudent.isDeleted = :courseGroupStudentIsDeleted', { courseGroupStudentIsDeleted: false })
+      .andWhere('student.isDeleted = :studentIsDeleted', { studentIsDeleted: false })
+      .andWhere('course.isDeleted = :courseIsDeleted', { courseIsDeleted: false })
+      .select([
+        'group.semester',
+        'group.name',
+        'period.name',
+        'student.registrationNumber',
+        'student.fullName',
+        'course.name',
+        'finalGrade.gradeOrdinary',
+        'finalGrade.gradeExtraordinary'
+      ])
+      .orderBy('student.fullName', 'ASC')
+      .addOrderBy('course.name', 'ASC');
+
+    const rawResults = await query.getRawMany();
+
+    // Transformar los resultados raw a la estructura deseada
+    const result: IQuery = {
+      semester: rawResults[0]?.group_semester || 0,
+      groupName: rawResults[0]?.group_name || '',
+      period: rawResults[0]?.period_name || '',
+      students: []
+    };
+
+    // Agrupar por estudiante
+    const studentsMap = new Map<string, any>();
+    
+    rawResults.forEach(row => {
+      const registrationNumber = row.student_registrationNumber;
+      const fullName = row.student_fullName;
+      const courseName = row.course_name;
+      const gradeOrd = row.finalGrade_gradeOrdinary;
+      const gradeExt = row.finalGrade_gradeExtraordinary;
+
+      if (!studentsMap.has(registrationNumber)) {
+        studentsMap.set(registrationNumber, {
+          registrationNumber,
+          fullName,
+          courses: []
+        });
+      }
+
+      const student = studentsMap.get(registrationNumber);
+      
+      // Solo agregar el curso si tiene calificaciones
+      if (courseName) {
+        student.courses.push({
+          name: courseName,
+          gradeOrd: gradeOrd || 0,
+          gradeExt: gradeExt || 0
+        });
+      }
+    });
+
+    result.students = Array.from(studentsMap.values());
+
+    return result;
   }
 
   async countTotal() {

@@ -32,6 +32,14 @@ export class GroupsController {
     return this.groupsService.findAllForDirector(paginationDto);
   }
 
+  @Get(':groupId/find-boletas')
+  @Auth()
+  findBoletas(
+    @Param('groupId') groupId: number
+  ) {
+    return this.groupsService.findBoletas(groupId);
+  }
+
   @Get('count')
   @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   count() {
