@@ -92,6 +92,107 @@ export class GroupsService {
       .leftJoinAndSelect('courseGroup.course', 'course')
       .leftJoinAndSelect('courseGroup.coursesGroupsStudents', 'courseGroupStudent')
       .leftJoinAndSelect('courseGroupStudent.student', 'student')
+      .leftJoinAndSelect('courseGroupStudent.partialGrades', 'partialGrade')
+      .leftJoinAndSelect('courseGroupStudent.finalGrades', 'finalGrade')
+      .where('group.id = :groupId', { groupId })
+      .andWhere('group.isDeleted = :isDeleted', { isDeleted: false })
+      .andWhere('courseGroup.isDeleted = :courseGroupIsDeleted', { courseGroupIsDeleted: false })
+      .andWhere('courseGroupStudent.isDeleted = :courseGroupStudentIsDeleted', { courseGroupStudentIsDeleted: false })
+      .andWhere('student.isDeleted = :studentIsDeleted', { studentIsDeleted: false })
+      .andWhere('course.isDeleted = :courseIsDeleted', { courseIsDeleted: false })
+      .select([
+        'group.semester',
+        'group.name',
+        'period.name',
+        'student.registrationNumber',
+        'student.fullName',
+        'course.name',
+        'partialGrade.partial',
+        'partialGrade.grade',
+        'finalGrade.gradeOrdinary',
+        'finalGrade.gradeExtraordinary'
+      ])
+      .orderBy('student.fullName', 'ASC')
+      .addOrderBy('course.name', 'ASC')
+      .addOrderBy('partialGrade.partial', 'ASC');
+
+    const rawResults = await query.getRawMany();
+
+    // Agrupar por estudiante y curso
+    const studentsMap = new Map<string, any>();
+    
+    rawResults.forEach(row => {
+      const registrationNumber = row.student_registrationNumber;
+      const fullName = row.student_fullName;
+      const groupName = row.group_name;
+      const semester = row.group_semester;
+      const periodName = row.period_name;
+      const courseName = row.course_name;
+      const partial = row.partialGrade_partial;
+      const grade = row.partialGrade_grade;
+      const gradeOrdinary = row.finalGrade_gradeOrdinary;
+      const gradeExtraordinary = row.finalGrade_gradeExtraordinary;
+
+      if (!studentsMap.has(registrationNumber)) {
+        studentsMap.set(registrationNumber, {
+          fullName,
+          registrationNumber,
+          groupName,
+          semester,
+          periodName,
+          courses: new Map()
+        });
+      }
+
+      const student = studentsMap.get(registrationNumber);
+      
+      if (!student.courses.has(courseName)) {
+        student.courses.set(courseName, {
+          name: courseName,
+          grades: [],
+          finalGrades: {
+            gradeOrdinary: 0,
+            gradeExtraordinary: 0
+          }
+        });
+      }
+
+      const course = student.courses.get(courseName);
+      
+      // Agregar calificación parcial si existe
+      if (partial && grade !== null) {
+        course.grades.push({
+          grade,
+          partial
+        });
+      }
+      
+      // Actualizar calificaciones finales si existen
+      if (gradeOrdinary !== null) {
+        course.finalGrades.gradeOrdinary = gradeOrdinary;
+      }
+      if (gradeExtraordinary !== null) {
+        course.finalGrades.gradeExtraordinary = gradeExtraordinary;
+      }
+    });
+
+    // Convertir el Map de cursos a array
+    const result = Array.from(studentsMap.values()).map(student => ({
+      ...student,
+      courses: Array.from(student.courses.values())
+    }));
+
+    return result;
+  }
+
+  async findBoletasFinales(groupId: number) {
+    const query = this.groupRepository
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.period', 'period')
+      .leftJoinAndSelect('group.coursesGroups', 'courseGroup')
+      .leftJoinAndSelect('courseGroup.course', 'course')
+      .leftJoinAndSelect('courseGroup.coursesGroupsStudents', 'courseGroupStudent')
+      .leftJoinAndSelect('courseGroupStudent.student', 'student')
       .leftJoinAndSelect('courseGroupStudent.finalGrades', 'finalGrade')
       .where('group.id = :groupId', { groupId })
       .andWhere('group.isDeleted = :isDeleted', { isDeleted: false })
