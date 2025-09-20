@@ -89,7 +89,26 @@ export class FinalGradesService {
 
   async generateReports(periodId: number) {
     try {
-      // 1. PROMEDIOS GENERALES (Suma de promedios de los grupos de cada semestre)
+      // Primero obtener todos los grupos activos del período
+      const groups = await this.courseGroupStudentRepository
+        .createQueryBuilder('cgs')
+        .leftJoinAndSelect('cgs.courseGroup', 'cg')
+        .leftJoinAndSelect('cg.group', 'g')
+        .where('g.period.id = :periodId', { periodId })
+        .andWhere('g.isDeleted = false')
+        .andWhere('cgs.isDeleted = false')
+        .andWhere('cg.isDeleted = false')
+        .select([
+          'g.id as groupId',
+          'g.name as groupName',
+          'g.semester as semester'
+        ])
+        .groupBy('g.id, g.name, g.semester')
+        .orderBy('g.semester', 'ASC')
+        .addOrderBy('g.name', 'ASC')
+        .getRawMany();
+  
+      // 1. PROMEDIOS GENERALES (se mantiene igual)
       const generalAverages = await this.courseGroupStudentRepository
         .createQueryBuilder('cgs')
         .leftJoinAndSelect('cgs.courseGroup', 'cg')
@@ -109,84 +128,99 @@ export class FinalGradesService {
         .groupBy('g.semester')
         .getRawMany();
   
-      // 2. PROMEDIOS POR GRUPO
-      const groupAverages = await this.courseGroupStudentRepository
-        .createQueryBuilder('cgs')
-        .leftJoinAndSelect('cgs.courseGroup', 'cg')
-        .leftJoinAndSelect('cg.course', 'c')
-        .leftJoinAndSelect('cg.group', 'g')
-        .leftJoinAndSelect('cgs.student', 's')
-        .leftJoinAndSelect('cgs.partialGrades', 'pg')
-        .where('g.period.id = :periodId', { periodId })
-        .andWhere('cgs.isDeleted = false')
-        .andWhere('cg.isDeleted = false')
-        .andWhere('s.isDeleted = false')
-        .select([
-          'g.name as groupName',
-          'g.semester as semester',
-          'AVG(pg.grade) as averageGrade',
-          'COUNT(DISTINCT cgs.id) as totalStudents'
-        ])
-        .groupBy('g.id, g.name, g.semester')
-        .orderBy('g.semester', 'ASC')
-        .addOrderBy('g.name', 'ASC')
-        .getRawMany();
-  
-      // 3. PROMEDIOS POR GRUPO POR ASIGNATURA
-      const groupSubjectAverages = await this.courseGroupStudentRepository
-        .createQueryBuilder('cgs')
-        .leftJoinAndSelect('cgs.courseGroup', 'cg')
-        .leftJoinAndSelect('cg.course', 'c')
-        .leftJoinAndSelect('cg.group', 'g')
-        .leftJoinAndSelect('cgs.student', 's')
-        .leftJoinAndSelect('cgs.partialGrades', 'pg')
-        .where('g.period.id = :periodId', { periodId })
-        .andWhere('cgs.isDeleted = false')
-        .andWhere('cg.isDeleted = false')
-        .andWhere('s.isDeleted = false')
-        .select([
-          'g.name as groupName',
-          'g.semester as semester',
-          'c.name as courseName',
-          'AVG(pg.grade) as averageGrade',
-          'COUNT(DISTINCT cgs.id) as totalStudents'
-        ])
-        .groupBy('g.id, g.name, g.semester, c.id, c.name')
-        .orderBy('g.semester', 'ASC')
-        .addOrderBy('g.name', 'ASC')
-        .addOrderBy('c.name', 'ASC')
-        .getRawMany();
-  
-      // 4. CANTIDADES DE ALUMNOS REPROBADOS POR ASIGNATURA
-      const failedStudentsBySubject = await this.courseGroupStudentRepository
-        .createQueryBuilder('cgs')
-        .leftJoinAndSelect('cgs.courseGroup', 'cg')
-        .leftJoinAndSelect('cg.course', 'c')
-        .leftJoinAndSelect('cg.group', 'g')
-        .leftJoinAndSelect('cgs.student', 's')
-        .leftJoinAndSelect('cgs.partialGrades', 'pg')
-        .where('g.period.id = :periodId', { periodId })
-        .andWhere('cgs.isDeleted = false')
-        .andWhere('cg.isDeleted = false')
-        .andWhere('s.isDeleted = false')
-        .select([
-          'c.name as courseName',
-          'g.semester as semester',
-          'COUNT(DISTINCT CASE WHEN pg.grade < 5 THEN cgs.id END) as failedStudents',
-          'COUNT(DISTINCT cgs.id) as totalStudents'
-        ])
-        .groupBy('c.id, c.name, g.semester')
-        .orderBy('g.semester', 'ASC')
-        .addOrderBy('c.name', 'ASC')
-        .getRawMany();
-  
-      return {
+      // Preparar la respuesta con estructura agrupada
+      const response: any = {
         periodId,
-        generalAverages,
-        groupAverages,
-        groupSubjectAverages,
-        failedStudentsBySubject
+        generalAverages
       };
+  
+      // Para cada grupo, generar sus reportes específicos
+      for (const group of groups) {
+        const groupKey = `group${group.groupName.replace(/\s+/g, '')}`; // Eliminar espacios del nombre
+        
+        // PROMEDIOS POR GRUPO (solo para este grupo específico)
+        const groupAverages = await this.courseGroupStudentRepository
+          .createQueryBuilder('cgs')
+          .leftJoinAndSelect('cgs.courseGroup', 'cg')
+          .leftJoinAndSelect('cg.course', 'c')
+          .leftJoinAndSelect('cg.group', 'g')
+          .leftJoinAndSelect('cgs.student', 's')
+          .leftJoinAndSelect('cgs.partialGrades', 'pg')
+          .where('g.period.id = :periodId', { periodId })
+          .andWhere('g.id = :groupId', { groupId: group.groupId })
+          .andWhere('cgs.isDeleted = false')
+          .andWhere('cg.isDeleted = false')
+          .andWhere('s.isDeleted = false')
+          .select([
+            'g.name as groupName',
+            'g.semester as semester',
+            'AVG(pg.grade) as averageGrade',
+            'COUNT(DISTINCT cgs.id) as totalStudents'
+          ])
+          .groupBy('g.id, g.name, g.semester')
+          .getRawMany();
+  
+        // PROMEDIOS POR GRUPO POR ASIGNATURA (solo para este grupo específico)
+        const groupSubjectAverages = await this.courseGroupStudentRepository
+          .createQueryBuilder('cgs')
+          .leftJoinAndSelect('cgs.courseGroup', 'cg')
+          .leftJoinAndSelect('cg.course', 'c')
+          .leftJoinAndSelect('cg.group', 'g')
+          .leftJoinAndSelect('cgs.student', 's')
+          .leftJoinAndSelect('cgs.partialGrades', 'pg')
+          .where('g.period.id = :periodId', { periodId })
+          .andWhere('g.id = :groupId', { groupId: group.groupId })
+          .andWhere('cgs.isDeleted = false')
+          .andWhere('cg.isDeleted = false')
+          .andWhere('s.isDeleted = false')
+          .select([
+            'g.name as groupName',
+            'g.semester as semester',
+            'c.name as courseName',
+            'AVG(pg.grade) as averageGrade',
+            'COUNT(DISTINCT cgs.id) as totalStudents'
+          ])
+          .groupBy('g.id, g.name, g.semester, c.id, c.name')
+          .orderBy('c.name', 'ASC')
+          .getRawMany();
+  
+        // CANTIDADES DE ALUMNOS REPROBADOS POR ASIGNATURA (solo para este grupo específico)
+        const failedStudentsBySubject = await this.courseGroupStudentRepository
+          .createQueryBuilder('cgs')
+          .leftJoinAndSelect('cgs.courseGroup', 'cg')
+          .leftJoinAndSelect('cg.course', 'c')
+          .leftJoinAndSelect('cg.group', 'g')
+          .leftJoinAndSelect('cgs.student', 's')
+          .leftJoinAndSelect('cgs.partialGrades', 'pg')
+          .where('g.period.id = :periodId', { periodId })
+          .andWhere('g.id = :groupId', { groupId: group.groupId })
+          .andWhere('cgs.isDeleted = false')
+          .andWhere('cg.isDeleted = false')
+          .andWhere('s.isDeleted = false')
+          .select([
+            'c.name as courseName',
+            'g.semester as semester',
+            'COUNT(DISTINCT CASE WHEN pg.grade < 5 THEN cgs.id END) as failedStudents',
+            'COUNT(DISTINCT cgs.id) as totalStudents'
+          ])
+          .groupBy('c.id, c.name, g.semester')
+          .orderBy('c.name', 'ASC')
+          .getRawMany();
+  
+        // Agregar los datos del grupo a la respuesta
+        response[groupKey] = {
+          groupInfo: {
+            id: group.groupId,
+            name: group.groupName,
+            semester: group.semester
+          },
+          groupAverages,
+          groupSubjectAverages,
+          failedStudentsBySubject
+        };
+      }
+  
+      return response;
   
     } catch (error) {
       handleDBErrors(error, 'generateReports - finalGrades');
