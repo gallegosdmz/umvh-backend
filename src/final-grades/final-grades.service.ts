@@ -136,7 +136,9 @@ export class FinalGradesService {
   
       // Para cada grupo, generar sus reportes específicos
       for (const group of groups) {
-        const groupKey = `group${group.groupName.replace(/\s+/g, '')}`; // Eliminar espacios del nombre
+        // Verificar que el nombre del grupo existe y crear clave segura
+        const groupName = group.name || `Grupo_${group.groupId}`;
+        const groupKey = `group${groupName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9_]/g, '')}`;
         
         // PROMEDIOS POR GRUPO (solo para este grupo específico)
         const groupAverages = await this.courseGroupStudentRepository
@@ -211,7 +213,7 @@ export class FinalGradesService {
         response[groupKey] = {
           groupInfo: {
             id: group.groupId,
-            name: group.groupName,
+            name: groupName,
             semester: group.semester
           },
           groupAverages,
