@@ -5,14 +5,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { FinalGrade } from './entities/final-grade.entity';
 import { UsersModule } from 'src/users/users.module';
 import { CoursesModule } from 'src/courses/courses.module';
+import { CourseGroupStudent } from 'src/courses/entities/course-group-student.entity';
 
 @Module({
   controllers: [FinalGradesController],
   providers: [FinalGradesService],
   imports: [
-    TypeOrmModule.forFeature([FinalGrade]),
+    TypeOrmModule.forFeature([FinalGrade, CourseGroupStudent]),
     UsersModule,
-    CoursesModule,
+    CoursesModule
   ],
   exports: [FinalGradesService]
 })

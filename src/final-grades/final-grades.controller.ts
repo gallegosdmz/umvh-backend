@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query } from '@nestjs/common';
 import { FinalGradesService } from './final-grades.service';
 import { CreateFinalGradeDto } from './dto/create-final-grade.dto';
 import { UpdateFinalGradeDto } from './dto/update-final-grade.dto';
@@ -15,6 +15,12 @@ export class FinalGradesController {
   @Auth(ValidRoles.administrador, ValidRoles.maestro)
   create(@Body() createFinalGradeDto: CreateFinalGradeDto, @GetUser() user: User) {
     return this.finalGradesService.create(createFinalGradeDto, user);
+  }
+
+  @Get('reports')
+  @Auth(ValidRoles.administrador, ValidRoles.director)
+  async generateReports(@Query('periodId', ParseIntPipe) periodId: number) {
+    return this.finalGradesService.generateReports(periodId);
   }
 
   @Get('findAll/:courseGroupStudentId')
