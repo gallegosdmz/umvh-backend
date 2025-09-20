@@ -172,7 +172,7 @@ export class FinalGradesService {
         .select([
           'c.name as courseName',
           'g.semester as semester',
-          'COUNT(DISTINCT CASE WHEN pg.grade < 70 THEN cgs.id END) as failedStudents',
+          'COUNT(DISTINCT CASE WHEN pg.grade < 5 THEN cgs.id END) as failedStudents',
           'COUNT(DISTINCT cgs.id) as totalStudents'
         ])
         .groupBy('c.id, c.name, g.semester')
