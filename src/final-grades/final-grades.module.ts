@@ -6,12 +6,13 @@ import { FinalGrade } from './entities/final-grade.entity';
 import { UsersModule } from 'src/users/users.module';
 import { CoursesModule } from 'src/courses/courses.module';
 import { CourseGroupStudent } from 'src/courses/entities/course-group-student.entity';
+import { Group } from 'src/groups/entities/group.entity';
 
 @Module({
   controllers: [FinalGradesController],
   providers: [FinalGradesService],
   imports: [
-    TypeOrmModule.forFeature([FinalGrade, CourseGroupStudent]),
+    TypeOrmModule.forFeature([FinalGrade, CourseGroupStudent, Group]),
     UsersModule,
     CoursesModule
   ],
