@@ -113,6 +113,30 @@ export class FinalGradesService {
         .groupBy('g.semester')
         .getRawMany();
 
+      // NUEVA CONSULTA: PROMEDIOS GENERALES DE GRUPOS POR SEMESTRE
+      const groupAveragesBySemester = await this.courseGroupStudentRepository
+        .createQueryBuilder('cgs')
+        .leftJoinAndSelect('cgs.courseGroup', 'cg')
+        .leftJoinAndSelect('cg.course', 'c')
+        .leftJoinAndSelect('cg.group', 'g')
+        .leftJoinAndSelect('cgs.student', 's')
+        .leftJoinAndSelect('cgs.partialGrades', 'pg')
+        .where('g.period.id = :periodId', { periodId })
+        .andWhere('cgs.isDeleted = false')
+        .andWhere('cg.isDeleted = false')
+        .andWhere('s.isDeleted = false')
+        .select([
+          'g.semester as semester',
+          'g.name as groupName',
+          'g.id as groupId',
+          'AVG(pg.grade) as averageGrade',
+          'COUNT(DISTINCT s.id) as totalStudents'
+        ])
+        .groupBy('g.semester, g.id, g.name')
+        .orderBy('g.semester', 'ASC')
+        .addOrderBy('g.name', 'ASC')
+        .getRawMany();
+
       // Obtener grupos directamente desde la entidad Group
       const groups = await this.groupRepository
         .createQueryBuilder('g')
@@ -134,7 +158,8 @@ export class FinalGradesService {
       // Preparar la respuesta con estructura agrupada
       const response: any = {
         periodId,
-        generalAverages
+        generalAverages,
+        groupAveragesBySemester
       };
 
       // Para cada grupo, generar sus reportes específicos
