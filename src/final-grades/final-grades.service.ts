@@ -9,6 +9,7 @@ import { handleDBErrors } from 'src/utils/errors';
 import { User } from 'src/users/entities/user.entity';
 import { CourseGroupStudent } from 'src/courses/entities/course-group-student.entity';
 import { Group } from 'src/groups/entities/group.entity';
+import { Period } from 'src/periods/entities/period.entity';
 
 @Injectable()
 export class FinalGradesService {
@@ -21,6 +22,9 @@ export class FinalGradesService {
 
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+
+    @InjectRepository(Period)
+    private readonly periodRepository: Repository<Period>,
 
     private readonly courseGroupStudentService: CoursesGroupsStudentsService
   ) { }
@@ -93,7 +97,28 @@ export class FinalGradesService {
 
   async generateReports(periodId: number) {
     try {
-      // 1. PROMEDIOS GENERALES (se mantiene igual)
+      // Primero obtener el período para saber qué parcial está activo
+      const period = await this.periodRepository.findOne({
+        where: { id: periodId, isDeleted: false }
+      });
+
+      if (!period) {
+        throw new NotFoundException(`Period with id: ${periodId} not found`);
+      }
+
+      // Determinar qué parcial está activo
+      let activePartial: number;
+      if (period.firstPartialActive) {
+        activePartial = 1;
+      } else if (period.secondPartialActive) {
+        activePartial = 2;
+      } else if (period.thirdPartialActive) {
+        activePartial = 3;
+      } else {
+        throw new Error('No partial is currently active for this period');
+      }
+
+      // 1. PROMEDIOS GENERALES (filtrado por parcial activo)
       const generalAverages = await this.courseGroupStudentRepository
         .createQueryBuilder('cgs')
         .leftJoinAndSelect('cgs.courseGroup', 'cg')
@@ -102,18 +127,19 @@ export class FinalGradesService {
         .leftJoinAndSelect('cgs.student', 's')
         .leftJoinAndSelect('cgs.partialGrades', 'pg')
         .where('g.period.id = :periodId', { periodId })
+        .andWhere('pg.partial = :activePartial', { activePartial }) // Filtrar por parcial activo
         .andWhere('cgs.isDeleted = false')
         .andWhere('cg.isDeleted = false')
         .andWhere('s.isDeleted = false')
         .select([
           'g.semester as semester',
           'AVG(pg.grade) as averageGrade',
-          'COUNT(DISTINCT s.id) as totalStudents' // Cambiar cgs.id por s.id
+          'COUNT(DISTINCT s.id) as totalStudents'
         ])
         .groupBy('g.semester')
         .getRawMany();
 
-      // NUEVA CONSULTA: PROMEDIOS GENERALES DE GRUPOS POR SEMESTRE
+      // PROMEDIOS GENERALES DE GRUPOS POR SEMESTRE (filtrado por parcial activo)
       const groupAveragesBySemester = await this.courseGroupStudentRepository
         .createQueryBuilder('cgs')
         .leftJoinAndSelect('cgs.courseGroup', 'cg')
@@ -122,6 +148,7 @@ export class FinalGradesService {
         .leftJoinAndSelect('cgs.student', 's')
         .leftJoinAndSelect('cgs.partialGrades', 'pg')
         .where('g.period.id = :periodId', { periodId })
+        .andWhere('pg.partial = :activePartial', { activePartial }) // Filtrar por parcial activo
         .andWhere('cgs.isDeleted = false')
         .andWhere('cg.isDeleted = false')
         .andWhere('s.isDeleted = false')
@@ -152,23 +179,20 @@ export class FinalGradesService {
         .addOrderBy('g.name', 'ASC')
         .getRawMany();
 
-      console.log('Raw groups result:', groups);
-      console.log('First group:', groups[0]);
-
       // Preparar la respuesta con estructura agrupada
       const response: any = {
         periodId,
+        activePartial, // Agregar información del parcial activo
         generalAverages,
         groupAveragesBySemester
       };
 
       // Para cada grupo, generar sus reportes específicos
       for (const group of groups) {
-        // CORRECCIÓN: Usar group.groupName (que viene del SELECT como alias)
         const groupName = group.groupname || `Grupo_${group.groupId}`;
         const groupKey = `group${groupName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9_]/g, '')}`;
 
-        // PROMEDIOS POR GRUPO
+        // PROMEDIOS POR GRUPO (filtrado por parcial activo)
         const groupAverages = await this.courseGroupStudentRepository
           .createQueryBuilder('cgs')
           .leftJoinAndSelect('cgs.courseGroup', 'cg')
@@ -178,6 +202,7 @@ export class FinalGradesService {
           .leftJoinAndSelect('cgs.partialGrades', 'pg')
           .where('g.period.id = :periodId', { periodId })
           .andWhere('g.id = :groupId', { groupId: group.groupid })
+          .andWhere('pg.partial = :activePartial', { activePartial }) // Filtrar por parcial activo
           .andWhere('cgs.isDeleted = false')
           .andWhere('cg.isDeleted = false')
           .andWhere('s.isDeleted = false')
@@ -185,12 +210,12 @@ export class FinalGradesService {
             'g.name as groupName',
             'g.semester as semester',
             'AVG(pg.grade) as averageGrade',
-            'COUNT(DISTINCT s.id) as totalStudents' // Cambiar cgs.id por s.id
+            'COUNT(DISTINCT s.id) as totalStudents'
           ])
           .groupBy('g.id, g.name, g.semester')
           .getRawMany();
 
-        // PROMEDIOS POR GRUPO POR ASIGNATURA
+        // PROMEDIOS POR GRUPO POR ASIGNATURA (filtrado por parcial activo)
         const groupSubjectAverages = await this.courseGroupStudentRepository
           .createQueryBuilder('cgs')
           .leftJoinAndSelect('cgs.courseGroup', 'cg')
@@ -200,6 +225,7 @@ export class FinalGradesService {
           .leftJoinAndSelect('cgs.partialGrades', 'pg')
           .where('g.period.id = :periodId', { periodId })
           .andWhere('g.id = :groupId', { groupId: group.groupid })
+          .andWhere('pg.partial = :activePartial', { activePartial }) // Filtrar por parcial activo
           .andWhere('cgs.isDeleted = false')
           .andWhere('cg.isDeleted = false')
           .andWhere('s.isDeleted = false')
@@ -208,13 +234,13 @@ export class FinalGradesService {
             'g.semester as semester',
             'c.name as courseName',
             'AVG(pg.grade) as averageGrade',
-            'COUNT(DISTINCT s.id) as totalStudents' // Cambiar cgs.id por s.id
+            'COUNT(DISTINCT s.id) as totalStudents'
           ])
           .groupBy('g.id, g.name, g.semester, c.id, c.name')
           .orderBy('c.name', 'ASC')
           .getRawMany();
 
-        // CANTIDADES DE ALUMNOS REPROBADOS POR ASIGNATURA
+        // CANTIDADES DE ALUMNOS REPROBADOS POR ASIGNATURA (filtrado por parcial activo)
         const failedStudentsBySubject = await this.courseGroupStudentRepository
           .createQueryBuilder('cgs')
           .leftJoinAndSelect('cgs.courseGroup', 'cg')
@@ -224,14 +250,15 @@ export class FinalGradesService {
           .leftJoinAndSelect('cgs.partialGrades', 'pg')
           .where('g.period.id = :periodId', { periodId })
           .andWhere('g.id = :groupId', { groupId: group.groupid })
+          .andWhere('pg.partial = :activePartial', { activePartial }) // Filtrar por parcial activo
           .andWhere('cgs.isDeleted = false')
           .andWhere('cg.isDeleted = false')
           .andWhere('s.isDeleted = false')
           .select([
             'c.name as courseName',
             'g.semester as semester',
-            'COUNT(DISTINCT CASE WHEN pg.grade < 5 THEN s.id END) as failedStudents', // Cambiar cgs.id por s.id
-            'COUNT(DISTINCT s.id) as totalStudents' // Cambiar cgs.id por s.id
+            'COUNT(DISTINCT CASE WHEN pg.grade < 5 THEN s.id END) as failedStudents',
+            'COUNT(DISTINCT s.id) as totalStudents'
           ])
           .groupBy('c.id, c.name, g.semester')
           .orderBy('c.name', 'ASC')
@@ -240,7 +267,7 @@ export class FinalGradesService {
         // Agregar los datos del grupo a la respuesta
         response[groupKey] = {
           groupInfo: {
-            id: group.groupid, // Cambiar group.groupId por group.groupid
+            id: group.groupid,
             name: groupName,
             semester: group.semester
           },
