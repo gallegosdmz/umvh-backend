@@ -40,6 +40,14 @@ export class GroupsController {
     return this.groupsService.findBoletas(groupId);
   }
 
+  @Get('detailed-students')
+  @Auth(ValidRoles.administrador, ValidRoles.director)
+  findGroupsWithStudentsDetailed(
+    @Query() paginationDto: PaginationDto
+  ) {
+    return this.groupsService.findGroupsWithStudentsDetailed(paginationDto);
+  }
+
   @Get('count')
   @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
   count() {

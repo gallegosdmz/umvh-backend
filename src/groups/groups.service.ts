@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { handleDBErrors } from 'src/utils/errors';
 import { PeriodsService } from 'src/periods/periods.service';
 import { PaginationDto } from 'src/core/dtos/pagination.dto';
+import { GroupStudentsDetailedResponseDto, GroupDetailedDto, StudentDto, CourseDto, PartialGradeDto, PartialEvaluationDto, PartialEvaluationGradeDto } from './dto/group-students-detailed.dto';
 
 export interface IQuery {
   semester: number;
@@ -308,5 +309,166 @@ export class GroupsService {
     } catch (error) {
       handleDBErrors(error, 'remove - groups');
     }
+  }
+
+  async findGroupsWithStudentsDetailed(paginationDto: PaginationDto): Promise<GroupStudentsDetailedResponseDto> {
+    const { limit = 10, offset = 0 } = paginationDto;
+
+    const query = this.groupRepository
+      .createQueryBuilder('group')
+      .leftJoinAndSelect('group.period', 'period')
+      .leftJoinAndSelect('group.coursesGroups', 'courseGroup')
+      .leftJoinAndSelect('courseGroup.course', 'course')
+      .leftJoinAndSelect('courseGroup.coursesGroupsStudents', 'courseGroupStudent')
+      .leftJoinAndSelect('courseGroupStudent.student', 'student')
+      .leftJoinAndSelect('courseGroupStudent.partialGrades', 'partialGrade')
+      .leftJoinAndSelect('courseGroup.partialEvaluations', 'partialEvaluation')
+      .leftJoinAndSelect('partialEvaluation.partialEvaluationGrades', 'partialEvaluationGrade')
+      .leftJoinAndSelect('partialEvaluationGrade.courseGroupStudent', 'pegCourseGroupStudent')
+      .where('group.isDeleted = :isDeleted', { isDeleted: false })
+      .andWhere('courseGroup.isDeleted = :courseGroupIsDeleted', { courseGroupIsDeleted: false })
+      .andWhere('courseGroupStudent.isDeleted = :courseGroupStudentIsDeleted', { courseGroupStudentIsDeleted: false })
+      .andWhere('student.isDeleted = :studentIsDeleted', { studentIsDeleted: false })
+      .andWhere('course.isDeleted = :courseIsDeleted', { courseIsDeleted: false })
+      .andWhere('partialEvaluation.isDeleted = :partialEvaluationIsDeleted', { partialEvaluationIsDeleted: false })
+      .andWhere('(pegCourseGroupStudent.id = courseGroupStudent.id OR pegCourseGroupStudent.id IS NULL)')
+      .orderBy('group.semester', 'ASC')
+      .addOrderBy('group.name', 'ASC')
+      .addOrderBy('student.fullName', 'ASC')
+      .addOrderBy('course.name', 'ASC')
+      .addOrderBy('partialEvaluation.partial', 'ASC')
+      .addOrderBy('partialEvaluation.slot', 'ASC');
+
+    const rawResults = await query.getRawMany();
+
+    // Obtener el total de grupos
+    const totalQuery = this.groupRepository
+      .createQueryBuilder('group')
+      .where('group.isDeleted = :isDeleted', { isDeleted: false });
+    
+    const total = await totalQuery.getCount();
+
+    // Transformar los resultados raw a la estructura deseada
+    const groupsMap = new Map<number, GroupDetailedDto>();
+    
+    rawResults.forEach(row => {
+      const groupId = row.group_id;
+      const groupName = row.group_name;
+      const semester = row.group_semester;
+      const periodId = row.period_id;
+      const periodName = row.period_name;
+      
+      const studentId = row.student_id;
+      const studentFullName = row.student_fullName;
+      const studentRegistrationNumber = row.student_registrationNumber;
+      
+      const courseId = row.course_id;
+      const courseName = row.course_name;
+      
+      const partialGradeId = row.partialGrade_id;
+      const partialGradePartial = row.partialGrade_partial;
+      const partialGradeGrade = row.partialGrade_grade;
+      const partialGradeDate = row.partialGrade_date;
+      
+      const partialEvaluationId = row.partialEvaluation_id;
+      const partialEvaluationName = row.partialEvaluation_name;
+      const partialEvaluationPartial = row.partialEvaluation_partial;
+      const partialEvaluationType = row.partialEvaluation_type;
+      const partialEvaluationSlot = row.partialEvaluation_slot;
+      
+      const partialEvaluationGradeId = row.partialEvaluationGrade_id;
+      const partialEvaluationGradeGrade = row.partialEvaluationGrade_grade;
+
+      // Crear o obtener el grupo
+      if (!groupsMap.has(groupId)) {
+        groupsMap.set(groupId, {
+          id: groupId,
+          name: groupName,
+          semester: semester,
+          period: {
+            id: periodId,
+            name: periodName
+          },
+          students: []
+        });
+      }
+
+      const group = groupsMap.get(groupId);
+      if (!group) return; // Esto no debería pasar ya que acabamos de crear el grupo
+      
+      // Buscar o crear el estudiante
+      let student = group.students.find(s => s.id === studentId);
+      if (!student) {
+        student = {
+          id: studentId,
+          fullName: studentFullName,
+          registrationNumber: studentRegistrationNumber,
+          courses: []
+        };
+        group.students.push(student);
+      }
+
+      // Buscar o crear el curso
+      let course = student.courses.find(c => c.id === courseId);
+      if (!course) {
+        course = {
+          id: courseId,
+          name: courseName,
+          semester: semester,
+          partialGrades: [],
+          partialEvaluations: []
+        };
+        student.courses.push(course);
+      }
+
+      // Agregar calificación parcial si existe
+      if (partialGradeId && partialGradeGrade !== null) {
+        const existingPartialGrade = course.partialGrades.find(pg => pg.id === partialGradeId);
+        if (!existingPartialGrade) {
+          course.partialGrades.push({
+            id: partialGradeId,
+            partial: partialGradePartial,
+            grade: partialGradeGrade,
+            date: partialGradeDate
+          });
+        }
+      }
+
+      // Agregar evaluación parcial si existe
+      if (partialEvaluationId) {
+        let partialEvaluation = course.partialEvaluations.find(pe => pe.id === partialEvaluationId);
+        if (!partialEvaluation) {
+          partialEvaluation = {
+            id: partialEvaluationId,
+            name: partialEvaluationName,
+            partial: partialEvaluationPartial,
+            type: partialEvaluationType,
+            slot: partialEvaluationSlot,
+            grades: []
+          };
+          course.partialEvaluations.push(partialEvaluation);
+        }
+
+        // Agregar calificación de evaluación parcial si existe
+        if (partialEvaluationGradeId && partialEvaluationGradeGrade !== null) {
+          const existingGrade = partialEvaluation.grades.find(peg => peg.id === partialEvaluationGradeId);
+          if (!existingGrade) {
+            partialEvaluation.grades.push({
+              id: partialEvaluationGradeId,
+              grade: partialEvaluationGradeGrade
+            });
+          }
+        }
+      }
+    });
+
+    // Aplicar paginación
+    const groupsArray = Array.from(groupsMap.values());
+    const paginatedGroups = groupsArray.slice(offset, offset + limit);
+
+    return {
+      groups: paginatedGroups,
+      total: total
+    };
   }
 }
