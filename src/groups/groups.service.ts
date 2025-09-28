@@ -421,9 +421,9 @@ export class GroupsService {
         student.courses.push(course);
       }
 
-      // Agregar calificación parcial si existe
+      // Agregar calificación parcial si existe (solo una por parcial)
       if (partialGradeId && partialGradeGrade !== null) {
-        const existingPartialGrade = course.partialGrades.find(pg => pg.id === partialGradeId);
+        const existingPartialGrade = course.partialGrades.find(pg => pg.partial === partialGradePartial);
         if (!existingPartialGrade) {
           course.partialGrades.push({
             id: partialGradeId,
