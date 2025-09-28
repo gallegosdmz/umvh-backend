@@ -32,14 +32,6 @@ export class GroupsController {
     return this.groupsService.findAllForDirector(paginationDto);
   }
 
-  @Get(':groupId/find-boletas')
-  @Auth(ValidRoles.administrador, ValidRoles.director)
-  findBoletas(
-    @Param('groupId') groupId: number
-  ) {
-    return this.groupsService.findBoletas(groupId);
-  }
-
   @Get('detailed-students')
   @Auth(ValidRoles.administrador, ValidRoles.director)
   findGroupsWithStudentsDetailed(
@@ -53,6 +45,14 @@ export class GroupsController {
   count() {
     return this.groupsService.countTotal();
   } 
+
+  @Get(':groupId/find-boletas')
+  @Auth(ValidRoles.administrador, ValidRoles.director)
+  findBoletas(
+    @Param('groupId') groupId: number
+  ) {
+    return this.groupsService.findBoletas(groupId);
+  }
 
   @Get(':id')
   @Auth(ValidRoles.administrador, ValidRoles.maestro, ValidRoles.director)
