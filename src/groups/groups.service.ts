@@ -312,7 +312,7 @@ export class GroupsService {
   }
 
   async findGroupsWithStudentsDetailed(paginationDto: PaginationDto): Promise<GroupStudentsDetailedResponseDto> {
-    const { limit = 10, offset = 0 } = paginationDto;
+    const { limit = 100, offset = 0 } = paginationDto;
 
     const query = this.groupRepository
       .createQueryBuilder('group')
