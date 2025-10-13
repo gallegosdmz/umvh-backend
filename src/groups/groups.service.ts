@@ -108,6 +108,7 @@ export class GroupsService {
         'student.registrationNumber',
         'student.fullName',
         'course.name',
+        'partialGrade.id',
         'partialGrade.partial',
         'partialGrade.grade',
         'finalGrade.gradeOrdinary',
@@ -115,7 +116,8 @@ export class GroupsService {
       ])
       .orderBy('student.fullName', 'ASC')
       .addOrderBy('course.name', 'ASC')
-      .addOrderBy('partialGrade.partial', 'ASC');
+      .addOrderBy('partialGrade.partial', 'ASC')
+      .addOrderBy('partialGrade.id', 'ASC');
 
     const rawResults = await query.getRawMany();
 
@@ -160,12 +162,15 @@ export class GroupsService {
 
       const course = student.courses.get(courseName);
       
-      // Agregar calificación parcial si existe
+      // Agregar calificación parcial si existe (solo la primera de cada parcial)
       if (partial && grade !== null) {
-        course.grades.push({
-          grade,
-          partial
-        });
+        const existingGrade = course.grades.find(g => g.partial === partial);
+        if (!existingGrade) {
+          course.grades.push({
+            grade,
+            partial
+          });
+        }
       }
       
       // Actualizar calificaciones finales si existen
