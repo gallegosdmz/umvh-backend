@@ -162,14 +162,18 @@ export class GroupsService {
 
       const course = student.courses.get(courseName);
       
-      // Agregar calificación parcial si existe (solo la primera de cada parcial)
+      // Agregar calificación parcial si existe (mantener solo la de mayor grade)
       if (partial && grade !== null) {
-        const existingGrade = course.grades.find(g => g.partial === partial);
-        if (!existingGrade) {
+        const existingGradeIndex = course.grades.findIndex(g => g.partial === partial);
+        if (existingGradeIndex === -1) {
+          // No existe, agregar nueva
           course.grades.push({
             grade,
             partial
           });
+        } else if (course.grades[existingGradeIndex].grade < grade) {
+          // Existe pero la nueva tiene mayor calificación, reemplazar
+          course.grades[existingGradeIndex].grade = grade;
         }
       }
       
