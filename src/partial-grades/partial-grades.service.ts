@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreatePartialGradeDto } from './dto/create-partial-grade.dto';
 import { UpdatePartialGradeDto } from './dto/update-partial-grade.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -18,13 +18,29 @@ export class PartialGradesService {
   ) {}
 
   async create(createPartialGradeDto: CreatePartialGradeDto, user: User) {
-    const { courseGroupStudentId, ...data } = createPartialGradeDto;
+    const { courseGroupStudentId, partial, ...data } = createPartialGradeDto;
 
     const courseGroupStudent = await this.courseGroupStudentService.findOne(courseGroupStudentId, user);
+
+    // Validar que no exista ya un partial-grade con el mismo courseGroupStudentId y partial
+    const existingPartialGrade = await this.partialGradeRepository.findOne({
+      where: {
+        courseGroupStudent: { id: courseGroupStudentId },
+        partial,
+        isDeleted: false,
+      },
+    });
+
+    if (existingPartialGrade) {
+      throw new BadRequestException(
+        `Ya existe una calificación parcial para este estudiante en el parcial ${partial}`
+      );
+    }
 
     try {
       const partialGrade = this.partialGradeRepository.create({
         courseGroupStudent,
+        partial,
         ...data,
       });
       await this.partialGradeRepository.save(partialGrade);
@@ -60,7 +76,8 @@ export class PartialGradesService {
 
     const partialGrade = await this.partialGradeRepository.preload({
       id,
-      ...data
+      ...data,
+      date: new Date(), // Actualizar automáticamente la fecha con la fecha actual
     });
     if (!partialGrade) throw new NotFoundException(`Partial Grade with id: ${ id } not found`);
 

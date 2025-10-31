@@ -101,6 +101,7 @@ export class GroupsService {
       .andWhere('courseGroupStudent.isDeleted = :courseGroupStudentIsDeleted', { courseGroupStudentIsDeleted: false })
       .andWhere('student.isDeleted = :studentIsDeleted', { studentIsDeleted: false })
       .andWhere('course.isDeleted = :courseIsDeleted', { courseIsDeleted: false })
+      .andWhere('(partialGrade.isDeleted = :partialGradeIsDeleted OR partialGrade.isDeleted IS NULL)', { partialGradeIsDeleted: false })
       .select([
         'group.semester',
         'group.name',
@@ -111,13 +112,14 @@ export class GroupsService {
         'partialGrade.id',
         'partialGrade.partial',
         'partialGrade.grade',
+        'partialGrade.date',
         'finalGrade.gradeOrdinary',
         'finalGrade.gradeExtraordinary'
       ])
       .orderBy('student.fullName', 'ASC')
       .addOrderBy('course.name', 'ASC')
       .addOrderBy('partialGrade.partial', 'ASC')
-      .addOrderBy('partialGrade.id', 'ASC');
+      .addOrderBy('partialGrade.date', 'DESC');
 
     const rawResults = await query.getRawMany();
 
@@ -133,6 +135,7 @@ export class GroupsService {
       const courseName = row.course_name;
       const partial = row.partialGrade_partial;
       const grade = row.partialGrade_grade;
+      const date = row.partialGrade_date;
       const gradeOrdinary = row.finalGrade_gradeOrdinary;
       const gradeExtraordinary = row.finalGrade_gradeExtraordinary;
 
@@ -162,18 +165,25 @@ export class GroupsService {
 
       const course = student.courses.get(courseName);
       
-      // Agregar calificación parcial si existe (mantener solo la de mayor grade)
-      if (partial && grade !== null) {
+      // Agregar calificación parcial si existe (mantener solo la de fecha más reciente)
+      if (partial && grade !== null && date !== null) {
         const existingGradeIndex = course.grades.findIndex(g => g.partial === partial);
         if (existingGradeIndex === -1) {
           // No existe, agregar nueva
           course.grades.push({
             grade,
-            partial
+            partial,
+            date
           });
-        } else if (course.grades[existingGradeIndex].grade < grade) {
-          // Existe pero la nueva tiene mayor calificación, reemplazar
-          course.grades[existingGradeIndex].grade = grade;
+        } else {
+          // Existe, comparar fechas y mantener la más reciente
+          const existingDate = new Date(course.grades[existingGradeIndex].date);
+          const newDate = new Date(date);
+          if (newDate > existingDate) {
+            // La nueva fecha es más reciente, reemplazar
+            course.grades[existingGradeIndex].grade = grade;
+            course.grades[existingGradeIndex].date = date;
+          }
         }
       }
       
