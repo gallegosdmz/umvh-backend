@@ -443,6 +443,7 @@ export class CoursesGroupsService {
         .createQueryBuilder('cg')
         .select([
           'cgs.id as courseGroupStudentId',
+          'fg.id as id',
           'fg.grade as grade',
           'fg.gradeOrdinary as gradeOrdinary',
           'fg.gradeExtraordinary as gradeExtraordinary',
@@ -492,6 +493,7 @@ export class CoursesGroupsService {
   
     const finalGradesData = finalGrades.map(finalGrade => ({
       courseGroupStudentId: finalGrade.coursegroupstudentid,
+      id: finalGrade.id,
       grade: finalGrade.grade,
       gradeOrdinary: finalGrade.gradeordinary,
       gradeExtraordinary: finalGrade.gradeextraordinary,
@@ -558,6 +560,7 @@ export class CoursesGroupsService {
         if (!student.finalGrade) {
           // No existe, agregar
           student.finalGrade = {
+            id: finalGrade.id,
             grade: finalGrade.grade,
             gradeOrdinary: finalGrade.gradeOrdinary,
             gradeExtraordinary: finalGrade.gradeExtraordinary,
@@ -569,6 +572,7 @@ export class CoursesGroupsService {
           const newDate = new Date(finalGrade.date);
           if (newDate > existingDate) {
             student.finalGrade = {
+              id: finalGrade.id,
               grade: finalGrade.grade,
               gradeOrdinary: finalGrade.gradeOrdinary,
               gradeExtraordinary: finalGrade.gradeExtraordinary,
