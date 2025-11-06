@@ -388,11 +388,11 @@ export class CoursesGroupsService {
       .where('cg.id = :courseGroupId', { courseGroupId })
       .andWhere('cg.isDeleted = :isDeleted', { isDeleted: false })
       .getExists();
-
+  
     if (!courseGroupExists) {
       throw new NotFoundException(`Course Group with id: ${courseGroupId} not found`);
     }
-
+  
     // Ejecutar todas las consultas en paralelo para máxima velocidad
     const [
       students,
@@ -419,7 +419,7 @@ export class CoursesGroupsService {
         .andWhere('s.isDeleted = :sIsDeleted', { sIsDeleted: false })
         .orderBy('s.id', 'ASC')
         .getRawMany(),
-
+  
       // Obtener calificaciones parciales
       this.courseGroupRepository
         .createQueryBuilder('cg')
@@ -435,8 +435,9 @@ export class CoursesGroupsService {
         .andWhere('cg.isDeleted = :isDeleted', { isDeleted: false })
         .andWhere('cgs.isDeleted = :cgsIsDeleted', { cgsIsDeleted: false })
         .andWhere('pg.isDeleted = :pgIsDeleted', { pgIsDeleted: false })
+        .orderBy('pg.date', 'DESC') // Ordenar por fecha descendente para obtener la más reciente
         .getRawMany(),
-
+  
       // Obtener calificaciones finales
       this.courseGroupRepository
         .createQueryBuilder('cg')
@@ -453,8 +454,9 @@ export class CoursesGroupsService {
         .andWhere('cg.isDeleted = :isDeleted', { isDeleted: false })
         .andWhere('cgs.isDeleted = :cgsIsDeleted', { cgsIsDeleted: false })
         .andWhere('fg.isDeleted = :fgIsDeleted', { fgIsDeleted: false })
+        .orderBy('fg.date', 'DESC') // Ordenar por fecha descendente para obtener la más reciente
         .getRawMany(),
-
+  
       // Obtener asistencias
       this.courseGroupRepository
         .createQueryBuilder('cg')
@@ -471,34 +473,125 @@ export class CoursesGroupsService {
         .andWhere('cgs.isDeleted = :cgsIsDeleted', { cgsIsDeleted: false })
         .getRawMany()
     ]);
-
+  
+    // Normalizar los datos
+    const studentsData = students.map(student => ({
+      id: student.id,
+      fullName: student.fullname,
+      semester: student.semester,
+      registrationNumber: student.registrationnumber,
+      courseGroupStudentId: student.coursegroupstudentid
+    }));
+  
+    const partialGradesData = partialGrades.map(partialGrade => ({
+      courseGroupStudentId: partialGrade.coursegroupstudentid,
+      partial: partialGrade.partial,
+      grade: partialGrade.grade,
+      date: partialGrade.date
+    }));
+  
+    const finalGradesData = finalGrades.map(finalGrade => ({
+      courseGroupStudentId: finalGrade.coursegroupstudentid,
+      grade: finalGrade.grade,
+      gradeOrdinary: finalGrade.gradeordinary,
+      gradeExtraordinary: finalGrade.gradeextraordinary,
+      date: finalGrade.date
+    }));
+  
+    const attendancesData = attendances.map(attendance => ({
+      courseGroupStudentId: attendance.coursegroupstudentid,
+      partial: attendance.partial,
+      attend: attendance.attend,
+      date: attendance.date
+    }));
+  
+    // Agrupar por estudiante
+    const studentsMap = new Map<number, any>();
+  
+    // Inicializar estudiantes
+    studentsData.forEach(student => {
+      studentsMap.set(student.courseGroupStudentId, {
+        fullName: student.fullName,
+        registrationNumber: student.registrationNumber,
+        attendances: [],
+        partialGrades: [],
+        finalGrade: null
+      });
+    });
+  
+    // Agregar calificaciones parciales
+    partialGradesData.forEach(partialGrade => {
+      const student = studentsMap.get(partialGrade.courseGroupStudentId);
+      if (student) {
+        // Verificar si ya existe una calificación para este parcial con fecha más reciente
+        const existingIndex = student.partialGrades.findIndex(
+          (pg: any) => pg.partial === partialGrade.partial
+        );
+        
+        if (existingIndex === -1) {
+          // No existe, agregar nueva
+          student.partialGrades.push({
+            partial: partialGrade.partial,
+            grade: partialGrade.grade,
+            date: partialGrade.date
+          });
+        } else {
+          // Existe, comparar fechas y mantener la más reciente
+          const existingDate = new Date(student.partialGrades[existingIndex].date);
+          const newDate = new Date(partialGrade.date);
+          if (newDate > existingDate) {
+            student.partialGrades[existingIndex] = {
+              partial: partialGrade.partial,
+              grade: partialGrade.grade,
+              date: partialGrade.date
+            };
+          }
+        }
+      }
+    });
+  
+    // Agregar calificación final (la más reciente)
+    finalGradesData.forEach(finalGrade => {
+      const student = studentsMap.get(finalGrade.courseGroupStudentId);
+      if (student) {
+        if (!student.finalGrade) {
+          // No existe, agregar
+          student.finalGrade = {
+            grade: finalGrade.grade,
+            gradeOrdinary: finalGrade.gradeOrdinary,
+            gradeExtraordinary: finalGrade.gradeExtraordinary,
+            date: finalGrade.date
+          };
+        } else {
+          // Existe, comparar fechas y mantener la más reciente
+          const existingDate = new Date(student.finalGrade.date);
+          const newDate = new Date(finalGrade.date);
+          if (newDate > existingDate) {
+            student.finalGrade = {
+              grade: finalGrade.grade,
+              gradeOrdinary: finalGrade.gradeOrdinary,
+              gradeExtraordinary: finalGrade.gradeExtraordinary,
+              date: finalGrade.date
+            };
+          }
+        }
+      }
+    });
+  
+    // Agregar asistencias
+    attendancesData.forEach(attendance => {
+      const student = studentsMap.get(attendance.courseGroupStudentId);
+      if (student) {
+        student.attendances.push({
+          partial: attendance.partial,
+          attend: attendance.attend,
+          date: attendance.date
+        });
+      }
+    });
+  
     return {
-      students: students.map(student => ({
-        id: student.id,
-        fullName: student.fullname,
-        semester: student.semester,
-        registrationNumber: student.registrationnumber,
-        courseGroupStudentId: student.coursegroupstudentid
-      })),
-      partialGrades: partialGrades.map(partialGrade => ({
-        courseGroupStudentId: partialGrade.coursegroupstudentid,
-        partial: partialGrade.partial,
-        grade: partialGrade.grade,
-        date: partialGrade.date
-      })),
-      finalGrades: finalGrades.map(finalGrade => ({
-        courseGroupStudentId: finalGrade.coursegroupstudentid,
-        grade: finalGrade.grade,
-        gradeOrdinary: finalGrade.gradeordinary,
-        gradeExtraordinary: finalGrade.gradeextraordinary,
-        date: finalGrade.date
-      })),
-      attendances: attendances.map(attendance => ({
-        courseGroupStudentId: attendance.coursegroupstudentid,
-        partial: attendance.partial,
-        attend: attendance.attend,
-        date: attendance.date
-      }))
+      students: Array.from(studentsMap.values())
     };
   }
 
