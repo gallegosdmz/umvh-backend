@@ -511,6 +511,7 @@ export class CoursesGroupsService {
     // Inicializar estudiantes
     studentsData.forEach(student => {
       studentsMap.set(student.courseGroupStudentId, {
+        id: student.id,
         fullName: student.fullName,
         registrationNumber: student.registrationNumber,
         attendances: [],
