@@ -420,23 +420,30 @@ export class CoursesGroupsService {
         .orderBy('s.id', 'ASC')
         .getRawMany(),
   
-      // Obtener calificaciones parciales
-      this.courseGroupRepository
-        .createQueryBuilder('cg')
-        .select([
-          'cgs.id as courseGroupStudentId',
-          'pg.partial as partial',
-          'pg.grade as grade',
-          'TO_CHAR(pg.date, \'YYYY-MM-DD\') as date'
-        ])
-        .innerJoin('cg.coursesGroupsStudents', 'cgs')
-        .innerJoin('cgs.partialGrades', 'pg')
-        .where('cg.id = :courseGroupId', { courseGroupId })
-        .andWhere('cg.isDeleted = :isDeleted', { isDeleted: false })
-        .andWhere('cgs.isDeleted = :cgsIsDeleted', { cgsIsDeleted: false })
-        .andWhere('pg.isDeleted = :pgIsDeleted', { pgIsDeleted: false })
-        .orderBy('pg.date', 'DESC') // Ordenar por fecha descendente para obtener la más reciente
-        .getRawMany(),
+      // Obtener calificaciones parciales (solo las más recientes por estudiante y parcial con isDeleted = false)
+      this.dataSource.query(`
+        SELECT 
+          ranked.coursegroupstudentid as coursegroupstudentid,
+          ranked.partial as partial,
+          ranked.grade as grade,
+          ranked.date as date
+        FROM (
+          SELECT 
+            cgs.id as coursegroupstudentid,
+            pg.partial as partial,
+            pg.grade as grade,
+            TO_CHAR(pg.date, 'YYYY-MM-DD') as date,
+            ROW_NUMBER() OVER (PARTITION BY cgs.id, pg.partial ORDER BY pg.date DESC) as rn
+          FROM course_groups cg
+          INNER JOIN course_group_students cgs ON cgs."courseGroupId" = cg.id
+          INNER JOIN partial_grades pg ON pg."courseGroupStudentId" = cgs.id
+          WHERE cg.id = $1
+            AND cg."isDeleted" = false
+            AND cgs."isDeleted" = false
+            AND pg."isDeleted" = false
+        ) ranked
+        WHERE ranked.rn = 1
+      `, [courseGroupId]),
   
       // Obtener calificaciones finales
       this.courseGroupRepository
@@ -522,11 +529,11 @@ export class CoursesGroupsService {
       });
     });
   
-    // Agregar calificaciones parciales
+    // Agregar calificaciones parciales (ya vienen filtradas para ser solo las más recientes)
     partialGradesData.forEach(partialGrade => {
       const student = studentsMap.get(partialGrade.courseGroupStudentId);
       if (student) {
-        // Verificar si ya existe una calificación para este parcial con fecha más reciente
+        // Verificar si ya existe una calificación para este parcial
         const existingIndex = student.partialGrades.findIndex(
           (pg: any) => pg.partial === partialGrade.partial
         );
@@ -538,18 +545,8 @@ export class CoursesGroupsService {
             grade: partialGrade.grade,
             date: partialGrade.date
           });
-        } else {
-          // Existe, comparar fechas y mantener la más reciente
-          const existingDate = new Date(student.partialGrades[existingIndex].date);
-          const newDate = new Date(partialGrade.date);
-          if (newDate > existingDate) {
-            student.partialGrades[existingIndex] = {
-              partial: partialGrade.partial,
-              grade: partialGrade.grade,
-              date: partialGrade.date
-            };
-          }
         }
+        // Si ya existe, no la agregamos porque la consulta SQL ya garantiza que solo vienen las más recientes
       }
     });
   
