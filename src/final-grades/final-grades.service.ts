@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateFinalGradeDto } from './dto/create-final-grade.dto';
 import { UpdateFinalGradeDto } from './dto/update-final-grade.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -32,6 +32,18 @@ export class FinalGradesService {
   async create(createFinalGradeDto: CreateFinalGradeDto, user: User) {
     const { courseGroupStudentId, ...data } = createFinalGradeDto;
     const courseGroupStudent = await this.courseGroupStudentService.findOne(courseGroupStudentId, user);
+
+    // Validar que no exista un final-grade para este estudiante en este curso-grupo
+    const existingFinalGrade = await this.finalGradeRepository.findOne({
+      where: {
+        courseGroupStudent: { id: courseGroupStudentId },
+        isDeleted: false
+      }
+    });
+
+    if (existingFinalGrade) {
+      throw new BadRequestException('El estudiante ya tiene una calificación final registrada para este curso-grupo');
+    }
 
     try {
       const finalGrade = this.finalGradeRepository.create({
