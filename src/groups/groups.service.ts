@@ -189,7 +189,7 @@ export class GroupsService {
       
       // Actualizar calificaciones finales si existen
       if (gradeOrdinary !== null) {
-        course.finalGrades.gradeOrdinary = gradeOrdinary;
+        course.finalGrades.gradeOrdinary = gradeOrdinary / 100;
       }
       if (gradeExtraordinary !== null) {
         course.finalGrades.gradeExtraordinary = gradeExtraordinary;
