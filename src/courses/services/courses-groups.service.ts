@@ -523,6 +523,7 @@ export class CoursesGroupsService {
         id: student.id,
         fullName: student.fullName,
         registrationNumber: student.registrationNumber,
+        courseGroupStudentId: student.courseGroupStudentId,
         attendances: [],
         partialGrades: [],
         finalGrade: null
