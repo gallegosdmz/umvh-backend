@@ -97,6 +97,9 @@ export class CoursesGroupsStudentsService {
         });
         if (!courseGroupStudent) throw new NotFoundException(`Course Group Student with id: ${ id } not found`);
 
+        console.log('course group: ', courseGroupStudent.courseGroup);
+        console.log('user: ', user);
+
         // Validación para saber si el maestro está asignado a este grupo y asingatura
         await this.courseValidator.checkUserAssignToCourse(courseGroupStudent.courseGroup, user);
 
