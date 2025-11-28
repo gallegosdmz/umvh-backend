@@ -31,7 +31,12 @@ export class FinalGradesService {
 
   async create(createFinalGradeDto: CreateFinalGradeDto, user: User) {
     const { courseGroupStudentId, ...data } = createFinalGradeDto;
-    const courseGroupStudent = await this.courseGroupStudentService.findOne(courseGroupStudentId, user);
+    //const courseGroupStudent = await this.courseGroupStudentService.findOne(courseGroupStudentId, user);
+
+    const courseGroupStudent = await this.courseGroupStudentRepository.findOne({
+      where: { id: courseGroupStudentId, isDeleted: false },
+    })
+    if (!courseGroupStudent) throw new NotFoundException('No existe el estudiante');
 
     // Validar que no exista un final-grade para este estudiante en este curso-grupo
     const existingFinalGrade = await this.finalGradeRepository.findOne({
